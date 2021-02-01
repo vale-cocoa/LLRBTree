@@ -27,7 +27,7 @@
 //
 
 import XCTest
-@testable import RedBlackBST
+@testable import LLRBTree
 
 // MARK: - Helpers for testing LLRBTree and its Node class:
 extension LLRBTree.Node {

@@ -27,7 +27,7 @@
 //
 
 import XCTest
-@testable import RedBlackBST
+@testable import LLRBTree
 
 final class LLRBTreeTests: XCTestCase {
     var sut: LLRBTree<String, Int>!
