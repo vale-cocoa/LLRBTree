@@ -444,3 +444,15 @@ extension LLRBTree: Codable where Key: Codable, Value: Codable {
     }
     
 }
+
+// MARK: - Hashable conformance
+extension LLRBTree: Hashable where Key: Hashable, Value: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(count)
+        root?.forEach {
+            hasher.combine($0.0)
+            hasher.combine($0.1)
+        }
+    }
+    
+}
