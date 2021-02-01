@@ -275,6 +275,24 @@ extension LLRBTree.Node {
         fixUp()
     }
     
+    func setValue(_ v: Value, forKey k: Key, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
+        if k < key {
+            if let l = left {
+                try l.setValue(v, forKey: k, uniquingKeysWith: combine)
+            } else {
+                left = LLRBTree.Node(key: k, value: v)
+            }
+        } else if k > key {
+            if let r = right {
+                try r.setValue(v, forKey: k, uniquingKeysWith: combine)
+            }
+        } else {
+            try value = combine(value, v)
+        }
+        
+        fixUp()
+    }
+    
 }
 
 // MARK: - remove value for key

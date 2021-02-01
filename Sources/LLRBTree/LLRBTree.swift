@@ -371,6 +371,37 @@ extension LLRBTree {
         return transformed
     }
     
+    public func setValue(_ value: Value, forKey key: Key, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
+        guard
+            let root = root
+        else {
+            setValue(value, forKey: key)
+            
+            return
+        }
+        
+        try root.setValue(value, forKey: key, uniquingKeysWith: combine)
+        root.color = .black
+    }
+    
+    public func merge(_ other: LLRBTree, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
+        let otherIterator = other.makeIterator()
+        guard
+            let otherRootElement = otherIterator.next()
+        else { return }
+        
+        if let root = root {
+            try root.setValue(otherRootElement.1, forKey: otherRootElement.0, uniquingKeysWith: combine)
+        } else {
+            root = LLRBTree.Node(key: otherRootElement.0, value: otherRootElement.1, color: .black)
+        }
+        
+        while let otherElement = otherIterator.next() {
+            try root!.setValue(otherElement.1, forKey: otherElement.0, uniquingKeysWith: combine)
+            root!.color = .black
+        }
+    }
+    
 }
 
 // MARK: - Tree traversal
