@@ -62,7 +62,7 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
     /// - Note: When the given sequence contains duplicate keys values in its elements,
     ///         the last element's value with the duplicate key willbe stored in the returned
     ///         instance.
-    public convenience init<S: Sequence>(_ elements: S) where S.Element == (Key, Value) {
+    public convenience init<S: Sequence>(_ elements: S) where S.Iterator.Element == Element {
         if let other = elements as? LLRBTree<Key, Value> {
             self.init(other)
         } else {
@@ -76,6 +76,11 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
                 self.root!.color = .black
             }
         }
+    }
+    
+    public convenience init<S>(_ keysAndValues: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S : Sequence, S.Iterator.Element == Element {
+        self.init()
+        try self.merge(keysAndValues, uniquingKeysWith: combine)
     }
     
     convenience init(_ other: LLRBTree) {
@@ -384,8 +389,8 @@ extension LLRBTree {
         root.color = .black
     }
     
-    public func merge(_ other: LLRBTree, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
-        let otherIterator = other.makeIterator()
+    public func merge<S: Sequence>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S.Iterator.Element == Element {
+        var otherIterator = other.makeIterator()
         guard
             let otherRootElement = otherIterator.next()
         else { return }
@@ -400,6 +405,14 @@ extension LLRBTree {
             try root!.setValue(otherElement.1, forKey: otherElement.0, uniquingKeysWith: combine)
             root!.color = .black
         }
+    }
+    
+    public func merging<S: Sequence>(_ other: S, niquingKeysWith combine: (Value, Value) throws -> Value) rethrows -> LLRBTree where S.Iterator.Element == Element {
+        let new = self.copy() as! LLRBTree<Key, Value>
+        try new
+            .merge(other, uniquingKeysWith: combine)
+        
+        return new
     }
     
 }
