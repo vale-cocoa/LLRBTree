@@ -56,9 +56,11 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
     /// Elements in given sequence must have unique keys otherwise a runtime
     ///  error will occur.
     ///
-    /// - Parameter elements:   A sequence containing key/value pairs
-    ///                         as elements to store in the new
-    ///                         Left-Leaning Red-Black Tree instance.
+    /// - Parameter uniqueKeysWithValues:   A sequence containing
+    ///                                     key/value pairs
+    ///                                     as elements to store
+    ///                                     in the new Left-Leaning
+    ///                                     Red-Black Tree instance.
     /// - Returns:  A new Left-Leaning Red-Black Tree instance
     ///             containing all elements in the given sequence.
     /// - Complexity:   O(*n* + log*n*) where *n* is the number
