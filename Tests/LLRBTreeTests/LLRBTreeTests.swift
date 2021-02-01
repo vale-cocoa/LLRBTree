@@ -63,7 +63,7 @@ final class LLRBTreeTests: XCTestCase {
     }
     
     private func whenRootContainsHalfGivenElements() {
-        sut = LLRBTree(givenHalfElements())
+        sut = LLRBTree(uniqueKeysWithValues: givenHalfElements())
     }
     
     // MARK: - Tests
@@ -153,13 +153,13 @@ final class LLRBTreeTests: XCTestCase {
     func testInitElements_whenSequenceIsNotAnotherLLRBTRee() {
         var elements = AnySequence<(String, Int)>(AnyIterator({ return nil }))
         // when elements is empty
-        sut = LLRBTree(elements)
+        sut = LLRBTree(uniqueKeysWithValues: elements)
         XCTAssertNotNil(sut)
         XCTAssertNil(sut.root)
         
         // when elements is not empty
         elements = AnySequence(givenElements())
-        sut = LLRBTree(elements)
+        sut = LLRBTree(uniqueKeysWithValues: elements)
         XCTAssertNotNil(sut)
         XCTAssertNotNil(sut.root)
         let expectedElements = elements
@@ -252,9 +252,10 @@ final class LLRBTreeTests: XCTestCase {
             XCTAssertNil(sut[key])
         }
         
-        // when root is not nil, and root.value(forKey:) returns nil,
+        // when root is not nil, and
+        // root.value(forKey:) returns nil,
         // then returns nil
-        sut = LLRBTree(givenHalfElements())
+        sut = LLRBTree(uniqueKeysWithValues: givenHalfElements())
         for key in sutNotIncludedKeys.shuffled() {
             XCTAssertNil(sut.root!.value(forKey: key))
             XCTAssertNil(sut[key])
@@ -310,7 +311,7 @@ final class LLRBTreeTests: XCTestCase {
         
         // when root is not nil, and key is in root,
         // then root's node with key gets deleted:
-        sut = LLRBTree(givenHalfElements())
+        sut = LLRBTree(uniqueKeysWithValues: givenHalfElements())
         let containedKeys = Set(sut.root!.map { $0.0 })
         for key in containedKeys.shuffled() {
             let prevCount = sut.count
@@ -327,7 +328,7 @@ final class LLRBTreeTests: XCTestCase {
         
         // when root is not nil, and key is not in root,
         // then nothing changes:
-        sut = LLRBTree(givenHalfElements())
+        sut = LLRBTree(uniqueKeysWithValues: givenHalfElements())
         let expectedElements = sut.root!.map { $0 }
         
         for key in sutNotIncludedKeys.shuffled() {

@@ -48,21 +48,26 @@ public final class LLRBTree<Key: Comparable, Value>: NSCopying {
 // MARK: - ExpressibleByDictionaryLiteral conformance & other convenience initializers
 extension LLRBTree: ExpressibleByDictionaryLiteral {
     public convenience init(dictionaryLiteral elements: (Key, Value)...) {
-        self.init(elements)
+        self.init(uniqueKeysWithValues: elements)
     }
     
-    /// Returns a new instance initialized to contain all elements from given sequence.
+    /// Returns a new instance initialized to contain all elements from given
+    /// sequence of key/value pairs.
+    /// Elements in given sequence must have unique keys otherwise a runtime
+    ///  error will occur.
     ///
-    /// - Parameter elements:   A sequence containing key/value paris as elements to
-    ///                         store in the new Left-Leaning Red-Black Tree instance.
-    /// - Returns:  A new Left-Leaning Red-Black Tree instance containing all elements in
-    ///             the given `elements` sequence.
-    /// - Complexity:   O(*n*log*n*) where *n* is the number of elements contained
-    ///                 in the given sequience.
-    /// - Note: When the given sequence contains duplicate keys values in its elements,
-    ///         the last element's value with the duplicate key willbe stored in the returned
-    ///         instance.
-    public convenience init<S: Sequence>(_ elements: S) where S.Iterator.Element == Element {
+    /// - Parameter elements:   A sequence containing key/value pairs
+    ///                         as elements to store in the new
+    ///                         Left-Leaning Red-Black Tree instance.
+    /// - Returns:  A new Left-Leaning Red-Black Tree instance
+    ///             containing all elements in the given sequence.
+    /// - Complexity:   O(*n* + log*n*) where *n* is the number
+    ///                 of elements stored in the given sequence.
+    /// - Note: When the given sequence contains duplicate keys values in its
+    ///         elements, a runtime error will occur.
+    ///         Use `init(_:uniquingKeysWith:)` in case the sequence
+    ///         might contain elements with duplicate keys.
+    public convenience init<S: Sequence>(uniqueKeysWithValues elements: S) where S.Iterator.Element == Element {
         if let other = elements as? LLRBTree<Key, Value> {
             self.init(other)
         } else {
@@ -72,7 +77,9 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
             
             self.root = LLRBTree.Node(key: first.0, value: first.1, color: .black)
             while let newElement = iter.next() {
-                self.root!.setValue(newElement.1, forKey: newElement.0)
+                self.root!.setValue(newElement.1, forKey: newElement.0, uniquingKeysWith: { _, _ in
+                    fatalError("Given sequence must have unique keys.")
+                })
                 self.root!.color = .black
             }
         }
@@ -461,6 +468,7 @@ extension LLRBTree: Equatable where Value: Equatable {
 extension LLRBTree: Codable where Key: Codable, Value: Codable {
     public enum Error: Swift.Error {
         case valueForKeyCount
+        case duplicateKeys
     }
     
     enum CodingKeys: String, CodingKey {
@@ -484,7 +492,9 @@ extension LLRBTree: Codable where Key: Codable, Value: Codable {
             keys.count == values.count
         else { throw Error.valueForKeyCount }
         
-        self.init(zip(keys, values))
+        try self.init(zip(keys, values), uniquingKeysWith: { _, _ in
+            throw Error.duplicateKeys
+        })
     }
     
 }

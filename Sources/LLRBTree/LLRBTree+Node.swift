@@ -285,6 +285,8 @@ extension LLRBTree.Node {
         } else if k > key {
             if let r = right {
                 try r.setValue(v, forKey: k, uniquingKeysWith: combine)
+            } else {
+                right = LLRBTree.Node(key: k, value: v)
             }
         } else {
             try value = combine(value, v)
