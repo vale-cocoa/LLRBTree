@@ -1001,7 +1001,6 @@ final class LLRBTreeNodeTests: XCTestCase {
     
     // MARK: - C.R.U.D. tests
     // MARK: - get/set value for key tests
-    
     func testGetValueForKey_whenKeyIsInTree_thenReturnsAssociatedValue() {
         whenBalancedTree()
         let elements: [(key: String, value: Int)] = sut!.map { $0 }
@@ -1050,6 +1049,10 @@ final class LLRBTreeNodeTests: XCTestCase {
             assertEachNodeCountIsCorrect(root: sut)
             XCTAssertEqual(sut.value(forKey: newKey), newValue)
         }
+    }
+    
+    func testSetValueForKeyUniquingKeys() {
+        XCTFail("Ought implement this")
     }
     
     // MARK: - remove value for key

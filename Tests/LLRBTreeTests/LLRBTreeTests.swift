@@ -127,7 +127,7 @@ final class LLRBTreeTests: XCTestCase {
     }
     
     // MARK: - Other convenience initializers tests
-    func testInitElements_whenSequenceIsAnotherLLRBTRee() {
+    func testInitUniqueKeysWithValues_whenSequenceIsAnotherLLRBTRee() {
         let other = LLRBTree<String, Int>()
         
         // other's root is nil
@@ -150,22 +150,26 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertEqual(sut.root, other.root)
     }
     
-    func testInitElements_whenSequenceIsNotAnotherLLRBTRee() {
-        var elements = AnySequence<(String, Int)>(AnyIterator({ return nil }))
-        // when elements is empty
-        sut = LLRBTree(uniqueKeysWithValues: elements)
+    func testInitUniqueKeysWithValues_whenSequenceIsNotAnotherLLRBTRee() {
+        var keysAndValues = AnySequence<(String, Int)>(AnyIterator({ return nil }))
+        // when keysAndValues is empty
+        sut = LLRBTree(uniqueKeysWithValues: keysAndValues)
         XCTAssertNotNil(sut)
         XCTAssertNil(sut.root)
         
-        // when elements is not empty
-        elements = AnySequence(givenElements())
-        sut = LLRBTree(uniqueKeysWithValues: elements)
+        // when keysAndValues is not empty
+        keysAndValues = AnySequence(givenElements())
+        sut = LLRBTree(uniqueKeysWithValues: keysAndValues)
         XCTAssertNotNil(sut)
         XCTAssertNotNil(sut.root)
-        let expectedElements = elements
+        let expectedElements = keysAndValues
             .sorted(by: { $0.0 < $1.0 })
         XCTAssertEqual(sut.root?.map { $0.0 }, expectedElements.map { $0.0 })
         XCTAssertEqual(sut.root?.map { $0.1 }, expectedElements.map { $0.1 })
+    }
+    
+    func testInitUniquingKeysWith() {
+        XCTFail("Ought implement this")
     }
     
     // MARK: - Computed properties tests
@@ -798,6 +802,18 @@ final class LLRBTreeTests: XCTestCase {
             XCTAssertEqual(result.map { $0.0 }, expectedElements.map { $0.0 })
             XCTAssertEqual(result.map { $0.1 }, expectedElements.map { $0.1 })
         }
+    }
+    
+    func testSetValueForKeyUniquingKeysWith() {
+        XCTFail("Ought implement this")
+    }
+    
+    func testMergeUniquingKeysWith() {
+        XCTFail("Ought implement this")
+    }
+    
+    func testMergingUniquingKeysWith() {
+        XCTFail("Ought implement this")
     }
     
     func testInOrderTraverse() {

@@ -68,12 +68,12 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
     ///         Use `init(_:uniquingKeysWith:)` in case the sequence
     ///         might contain elements with duplicate keys.
     /// - Precondition: The sequence must not have duplicate keys.
-    public convenience init<S: Sequence>(uniqueKeysWithValues elements: S) where S.Iterator.Element == Element {
-        if let other = elements as? LLRBTree<Key, Value> {
+    public convenience init<S: Sequence>(uniqueKeysWithValues keysAndValues: S) where S.Iterator.Element == Element {
+        if let other = keysAndValues as? LLRBTree<Key, Value> {
             self.init(other)
         } else {
             self.init()
-            var iter = elements.makeIterator()
+            var iter = keysAndValues.makeIterator()
             guard let first = iter.next() else { return }
             
             self.root = LLRBTree.Node(key: first.0, value: first.1, color: .black)
@@ -546,22 +546,52 @@ extension LLRBTree {
 
 // MARK: - Tree traversal
 extension LLRBTree {
+    /// Traverse the tree in-order executing the given `body` closure
+    /// on each element encountered during the traversal operation.
+    ///
+    /// - Parameter _:  A closure to execute on every element encountered
+    ///                 while traversing the tree.
+    /// - Complexity:   O(`n`) where `n` is the lenght of this tree.
     public func inOrderTraverse(_ body: (Element) throws -> Void) rethrows {
         try root?.inOrderTraverse({ try body($0.element) })
     }
     
+    /// Traverse the tree in reverse-in-order executing the given `body` closure
+    /// on each element encountered during the traversal operation.
+    ///
+    /// - Parameter _:  A closure to execute on every element encountered
+    ///                 while traversing the tree.
+    /// - Complexity:   O(`n`) where `n` is the lenght of this tree.
     public func reverseInOrderTraverse(_ body: (Element) throws -> Void) rethrows {
         try root?.reverseInOrderTraverse({ try body($0.element) })
     }
     
+    /// Traverse the tree in pre-order executing the given `body` closure
+    /// on each element encountered during the traversal operation.
+    ///
+    /// - Parameter _:  A closure to execute on every element encountered
+    ///                 while traversing the tree.
+    /// - Complexity:   O(`n`) where `n` is the lenght of this tree.
     public func preOrderTraverse(_ body: (Element) throws -> Void) rethrows {
         try root?.preOrderTraverse({ try body($0.element) })
     }
     
+    /// Traverse the tree in post-order executing the given `body` closure
+    /// on each element encountered during the traversal operation.
+    ///
+    /// - Parameter _:  A closure to execute on every element encountered
+    ///                 while traversing the tree.
+    /// - Complexity:   O(`n`) where `n` is the lenght of this tree.
     public func postOrderTraverse(_ body: (Element) throws -> Void) rethrows {
         try root?.postOrderTraverse({ try body($0.element) })
     }
     
+    /// Traverse the tree in level-order executing the given `body` closure
+    /// on each element encountered during the traversal operation.
+    ///
+    /// - Parameter _:  A closure to execute on every element encountered
+    ///                 while traversing the tree.
+    /// - Complexity:   O(`n`) where `n` is the lenght of this tree.
     public func levelOrderTraverse(_ body: (Element) throws -> Void) rethrows {
         try root?.levelOrderTraverse({ try body($0.element) })
     }
