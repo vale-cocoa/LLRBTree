@@ -534,7 +534,7 @@ extension LLRBTree {
     ///                 lenght of the given sequence, and *n* is the
     ///                  lenght of the final tree.
     ///                 Assuming `combine` has O(1) complexity.
-    public func merging<S: Sequence>(_ other: S, niquingKeysWith combine: (Value, Value) throws -> Value) rethrows -> LLRBTree where S.Iterator.Element == Element {
+    public func merging<S: Sequence>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows -> LLRBTree where S.Iterator.Element == Element {
         let new = self.copy() as! LLRBTree<Key, Value>
         try new
             .merge(other, uniquingKeysWith: combine)

@@ -996,12 +996,210 @@ final class LLRBTreeTests: XCTestCase {
         }
     }
     
-    func testMergeUniquingKeysWith() {
-        XCTFail("Ought implement this")
+    func testMergeUniquingKeysWith_whenCombineThrows() {
+        let other = LLRBTree<String, Int>()
+        let combine: (Int, Int) throws -> Int = { _, _ in
+            throw err
+        }
+        
+        // root is nil and other is empty,
+        // then doesn't rethrows and no element gets inserted
+        XCTAssertNil(sut.root)
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertNil(sut.root)
+        
+        // root is nil and other is not empty,
+        // then doesn't rethrows and elements from other are
+        // inserted
+        givenKeys.forEach { other.setValue(givenRandomValue(), forKey: $0) }
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertNotNil(sut.root)
+        XCTAssertEqual(sut.map { $0.0 }, other.map { $0.0 })
+        XCTAssertEqual(sut.map { $0.1 }, other.map { $0.1 })
+        if let root = sut.root {
+            assertLeftLeaningRedBlackTreeInvariants(root: root)
+            assertEachNodeCountIsCorrect(root: root)
+        } else {
+            XCTFail("sut.root should not be nil")
+        }
+        
+        // root is not nil and other is empty,
+        // then doesn't rethrows and elements are same
+        other.root = nil
+        let expectedElements = sut!.map { $0 }
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertEqual(sut.map { $0.0 }, expectedElements.map { $0.0 })
+        XCTAssertEqual(sut.map { $0.1 }, expectedElements.map { $0.1 })
+        
+        // root is not nil, other is not empty and doesn't contain
+        // any duplicate key, then doesn't rethrow and elements
+        // from other get inserted
+        whenRootContainsHalfGivenElements()
+        let notContainedKeys = givenKeys.filter({ sut.value(forKey: $0) == nil })
+        for k in notContainedKeys {
+            other.setValue(givenRandomValue(), forKey: k)
+        }
+        let prevCount = sut.count
+        let prevElements = sut!.map { $0 }
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertEqual(sut.count, prevCount + other.count)
+        for otherElement in other {
+            XCTAssertEqual(sut.value(forKey: otherElement.0), otherElement.1)
+        }
+        for prevElement in prevElements {
+            XCTAssertEqual(sut.value(forKey: prevElement.0), prevElement.1)
+        }
+        if let root = sut.root {
+            assertLeftLeaningRedBlackTreeInvariants(root: root)
+            assertEachNodeCountIsCorrect(root: root)
+        } else {
+            XCTFail("sut.root should not be nil")
+        }
+        
+        // root is not nil and other contains duplicate keys,
+        // then throws
+        other.root = sut.root?.copy() as? LLRBTree<String, Int>.Node
+        XCTAssertNotNil(other.root)
+        XCTAssertThrowsError(try sut.merging(other, uniquingKeysWith: combine))
+    }
+    
+    func testMergeUniquingKeysWith_whenCombineDoesntThrow() {
+        var executed: Bool = false
+        let combine: (Int, Int) throws -> Int = { prev, next in
+            executed = true
+            return prev + next
+        }
+        let other = LLRBTree<String, Int>()
+        
+        // root is nil and other is empty,
+        // then combine doesn't execute and sut.root == nil
+        XCTAssertNil(sut.root)
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertFalse(executed)
+        XCTAssertNil(sut.root)
+        
+        // root is nil and other is not empty,
+        // then combine doesn't execute and other's elements get
+        // inserted
+        executed = false
+        givenKeys.forEach { other.setValue(givenRandomValue(), forKey: $0) }
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertFalse(executed)
+        XCTAssertNotNil(sut.root)
+        XCTAssertEqual(sut.map { $0.0 }, other.map { $0.0 })
+        XCTAssertEqual(sut.map { $0.1 }, other.map { $0.1 })
+        if let root = sut.root {
+            assertLeftLeaningRedBlackTreeInvariants(root: root)
+            assertEachNodeCountIsCorrect(root: root)
+        } else {
+            XCTFail("sut.root should not be nil")
+        }
+        
+        // root is not nil, other is not empty and doesn't contain
+        // any duplicate key, then combine doesn't execute
+        // and elements from other get inserted
+        whenRootContainsHalfGivenElements()
+        other.root = nil
+        var notContainedKeys = givenKeys.filter({ sut.value(forKey: $0) == nil })
+        for k in notContainedKeys {
+            other.setValue(givenRandomValue(), forKey: k)
+        }
+        var prevCount = sut.count
+        var prevElements = sut!.map { $0 }
+        executed = false
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertFalse(executed)
+        XCTAssertEqual(sut.count, prevCount + other.count)
+        for otherElement in other {
+            XCTAssertEqual(sut.value(forKey: otherElement.0), otherElement.1)
+        }
+        for prevElement in prevElements {
+            XCTAssertEqual(sut.value(forKey: prevElement.0), prevElement.1)
+        }
+        if let root = sut.root {
+            assertLeftLeaningRedBlackTreeInvariants(root: root)
+            assertEachNodeCountIsCorrect(root: root)
+        } else {
+            XCTFail("sut.root should not be nil")
+        }
+        
+        // root is not nil, other is not empty and contains
+        // duplicate keys, then other elemnts get inserted and
+        // for elements with duplicate keys combine executes and
+        // its results are set for elements with duplicate keys
+        whenRootContainsHalfGivenElements()
+        other.root = nil
+        notContainedKeys = givenKeys.filter({ sut.value(forKey: $0) == nil })
+        notContainedKeys.forEach {
+            other.setValue(givenRandomValue(), forKey: $0)
+        }
+        let elementsWithDuplicateKeys = sut
+            .prefix(3)
+            .map { ($0.0, givenRandomValue()) }
+        elementsWithDuplicateKeys.forEach { other.setValue($0.1, forKey: $0.0) }
+        let expectedResultForDuplicateKeys = zip(sut.prefix(3), elementsWithDuplicateKeys)
+            .map { ($0.0.0, try! combine($0.0.1, $0.1.1)) }
+        executed = false
+        prevCount = sut.count
+        prevElements = sut.dropFirst(3).map { $0 }
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertTrue(executed)
+        XCTAssertEqual(sut.count, prevCount + notContainedKeys.count)
+        prevElements.forEach { XCTAssertEqual(sut.value(forKey: $0.0), $0.1) }
+        notContainedKeys.forEach { XCTAssertEqual(sut.value(forKey: $0), other.value(forKey: $0)) }
+        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(sut.value(forKey: $0.0), $0.1) }
+        if let root = sut.root {
+            assertLeftLeaningRedBlackTreeInvariants(root: root)
+            assertEachNodeCountIsCorrect(root: root)
+        } else {
+            XCTFail("sut.root should not be nil")
+        }
     }
     
     func testMergingUniquingKeysWith() {
-        XCTFail("Ought implement this")
+        // Since this method wraps around
+        // merge(_:,uniquingKeysWith:) we are just gonna tests
+        // that when it doesn't throw returns a different
+        // instance not touching the original one
+        
+        var executed: Bool = false
+        let combine: (Int, Int) throws -> Int = { prev, next in
+            executed = true
+            return prev + next
+        }
+        // combine doesn't throws, and root is not nil other is
+        // not empty and contains duplicate keys,
+        // then returns a copy with merged elements
+        whenRootContainsHalfGivenElements()
+        let other = LLRBTree<String, Int>()
+        let notContainedKeys = givenKeys.filter({ sut.value(forKey: $0) == nil })
+        notContainedKeys.forEach {
+            other.setValue(givenRandomValue(), forKey: $0)
+        }
+        let elementsWithDuplicateKeys = sut
+            .prefix(3)
+            .map { ($0.0, givenRandomValue()) }
+        elementsWithDuplicateKeys.forEach { other.setValue($0.1, forKey: $0.0) }
+        let expectedResultForDuplicateKeys = zip(sut.prefix(3), elementsWithDuplicateKeys)
+            .map { ($0.0.0, try! combine($0.0.1, $0.1.1)) }
+        executed = false
+        var result: LLRBTree<String, Int>!
+        let prevSut = sut!.copy() as! LLRBTree<String, Int>
+        XCTAssertNoThrow(try result = sut.merging(other, uniquingKeysWith: combine))
+        XCTAssertTrue(executed)
+        XCTAssertFalse(sut === result, "result instance is sut")
+        XCTAssertFalse(result === other, "result instance is other")
+        XCTAssertEqual(sut, prevSut)
+        XCTAssertEqual(result.count, prevSut.count + notContainedKeys.count)
+        prevSut.dropFirst(3).forEach { XCTAssertEqual(result.value(forKey: $0.0), $0.1) }
+        notContainedKeys.forEach { XCTAssertEqual(result.value(forKey: $0), other.value(forKey: $0)) }
+        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.value(forKey: $0.0), $0.1) }
+        if let root = result.root {
+            assertLeftLeaningRedBlackTreeInvariants(root: root)
+            assertEachNodeCountIsCorrect(root: root)
+        } else {
+            XCTFail("result.root should not be nil")
+        }
     }
     
     func testInOrderTraverse() {
