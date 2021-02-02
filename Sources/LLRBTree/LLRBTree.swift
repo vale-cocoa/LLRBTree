@@ -33,9 +33,9 @@ import Foundation
 public final class LLRBTree<Key: Comparable, Value>: NSCopying {
     var root: Node? = nil
     
-    /// Instantiates and returns a new empty Left-Leaning Red-Black Tree.
+    /// Instantiates and returns a new empty tree.
     ///
-    /// - Returns: A new empty Left-Leaning Red-Black Tree instance.
+    /// - Returns: A new empty tree.
     public init() { }
     
     public func copy(with zone: NSZone? = nil) -> Any {
@@ -51,24 +51,23 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
         self.init(uniqueKeysWithValues: elements)
     }
     
-    /// Returns a new instance initialized to contain all elements from given
+    /// Returns a new instance initialized to contain all elements from the given
     /// sequence of key/value pairs.
-    /// Elements in given sequence must have unique keys otherwise a runtime
+    /// Elements in the given sequence must have unique keys otherwise a runtime
     ///  error will occur.
     ///
     /// - Parameter uniqueKeysWithValues:   A sequence containing
     ///                                     key/value pairs
     ///                                     as elements to store
-    ///                                     in the new Left-Leaning
-    ///                                     Red-Black Tree instance.
-    /// - Returns:  A new Left-Leaning Red-Black Tree instance
-    ///             containing all elements in the given sequence.
-    /// - Complexity:   O(*n* + log*n*) where *n* is the number
-    ///                 of elements stored in the given sequence.
+    ///                                     in the new tree.
+    /// - Returns:  A new tree containing all elements from the given sequence.
+    /// - Complexity:   O(*n* + log *n*) where *n* is the lenght
+    ///                 of the given sequence.
     /// - Note: When the given sequence contains duplicate keys values in its
     ///         elements, a runtime error will occur.
     ///         Use `init(_:uniquingKeysWith:)` in case the sequence
     ///         might contain elements with duplicate keys.
+    /// - Precondition: The sequence must not have duplicate keys.
     public convenience init<S: Sequence>(uniqueKeysWithValues elements: S) where S.Iterator.Element == Element {
         if let other = elements as? LLRBTree<Key, Value> {
             self.init(other)
@@ -80,13 +79,55 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
             self.root = LLRBTree.Node(key: first.0, value: first.1, color: .black)
             while let newElement = iter.next() {
                 self.root!.setValue(newElement.1, forKey: newElement.0, uniquingKeysWith: { _, _ in
-                    fatalError("Given sequence must have unique keys.")
+                    preconditionFailure("Given sequence must have unique keys.")
                 })
                 self.root!.color = .black
             }
         }
     }
     
+    /// Creates a new instance from the key-value pairs in the given sequence, using
+    /// a combining closure to determine the value for any duplicate keys.
+    ///
+    /// You use this initializer to create a tree when you
+    /// have a sequence of key-value tuples that might have duplicate keys. As the
+    /// tree is built, the initializer calls the combine closure with the current and new
+    /// values for any duplicate keys. Pass a closure as combine that returns the
+    /// value to use in the resulting tree: The closure can choose between the two
+    /// values, combine them to produce a new value, or even throw an error.
+    /// The following example shows how to choose the first and last values for any
+    /// duplicate keys:
+    ///
+    /// ```
+    ///     let pairsWithDuplicateKeys = [
+    ///         ("a", 1),
+    ///         ("b", 2),
+    ///         ("a", 3),
+    ///         ("b", 4)
+    ///     ]
+    ///
+    ///     let firstValues = LLRBTree(pairsWithDuplicateKeys, uniquingKeysWith: { (first, _) in first })
+    ///     // ["b": 2, "a": 1]
+    ///
+    ///     let lastValues = LLRBTree(pairsWithDuplicateKeys, uniquingKeysWith: { (_, last) in last })
+    ///     // ["b": 4, "a": 3]
+    ///
+    /// ```
+    /// - Parameter keysAndValues:  A sequence of key-value pairs to use
+    ///                             for the new
+    ///                             tree.
+    /// - Parameter combine:    A closure that is called with the values for
+    ///                         any duplicate keys that are encountered.
+    ///                         The closure returns the desired value for
+    ///                          the final tree.
+    /// - Returns:  A new tree
+    ///             containing all the elements in the given sequence, adopting
+    ///             the given `combine` closure for uniquing elements with
+    ///             duplicate keys.
+    /// - Complexity:   Amortized O(*m* + log *n*) where *m* is the
+    ///                 lenght of the given sequence,  and *n*is  the lenght of
+    ///                 the the final tree.
+    ///                 Assuming `combine` closure has O(1) complexity.
     public convenience init<S>(_ keysAndValues: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S : Sequence, S.Iterator.Element == Element {
         self.init()
         try self.merge(keysAndValues, uniquingKeysWith: combine)
@@ -104,53 +145,55 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
 
 // MARK: - Computed properties
 extension LLRBTree {
-    /// The number of elements stored in this Left-Leaning Red-Black Tree instance.
+    /// The number of elements stored in this tree.
+    ///
     /// - Complexity: O(1)
     public var count: Int { root?.count ?? 0 }
     
-    /// A boolean value, `true` when no element is stored in this
-    /// Left-Leaning Red-Black Tree instance.
+    /// A boolean value, `true` when no element is stored in this tree.
+    ///
     /// - Complexity: O(1)
     public var isEmpty: Bool { root == nil }
     
-    /// The element with the smallest key stored in this Left-Leaning Red-Black Tree instance.
-    /// Returns `nil` when `isEmpty` is `true`.
-    /// - Complexity:   O(log *n*) where *n* is the number of stored elements in
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// The element with the smallest key stored in this tree; `nil` when
+    /// `isEmpty` is `true`.
+    ///
+    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
     public var min: Element? {
         guard let rootMin = root?.min else { return nil }
         
         return (rootMin.key, rootMin.value)
     }
     
-    /// The element with the greatest key stored in this Left-Leaning Red-Black Tree instance.
-    /// Returns `nil` when `isEmpty` is `true`.
-    /// - Complexity:   O(log *n*) where *n* is the number of stored elements in
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// The element with the greatest key stored in this tree; `nil` when
+    /// `isEmpty` is `true`.
+    ///
+    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
     public var max: Element? {
         guard let rootMax = root?.max else { return nil }
         
         return (rootMax.key, rootMax.value)
     }
-    /// The smallest key stored in this Left-Leaning Red-Black Tree instance.
-    /// Returns `nil` when `isEmpty` is `true`.
-    /// - Complexity:   O(log *n*) where *n* is the number of stored elements in
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// The smallest key stored in this tree; `nil` when
+    /// `isEmpty` is `true`.
+    ///
+    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
     public var minKey: Key? { root?.minKey }
     
-    /// The greatest key stored in this Left-Leaning Red-Black Tree instance.
-    /// Returns `nil` when `isEmpty` is `true`.
-    /// - Complexity:   O(log *n*) where *n* is the number of stored elements in
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// The greatest key stored in this tree; `nil` when
+    /// `isEmpty` is `true`.
+    ///
+    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
     public var maxKey: Key? { root?.maxKey }
 }
 
 // MARK: - subscript and key/value based operations
 extension LLRBTree {
-    /// Access elements' values stored in this Left-Leaning Red-Black Tree instance, via keys.
+    /// Access elements' values stored in this tree, via keys subscription.
     ///
     /// - Parameter key: The key of the element to access.
-    /// - Returns: The value stored for the given key or `nil` if such key is not present.
+    /// - Returns:  The value stored for the given key,
+    ///             or `nil` if such key is not present.
     /// - Note: The subscript can be used to update, insert or delete an element:
     ///         ```
     ///         var tree = LLRBTree<String, Int>()
@@ -172,8 +215,8 @@ extension LLRBTree {
     ///         print("\(tree["A"] ?? "nil")")
     ///         // prints nil
     ///         ```
-    /// - Complexity:   Amortized O(log *n*) where *n* is the count of
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// - Complexity:   Amortized O(log *n*) where *n* is
+    ///                 the lenght of this tree.
     public subscript(key: Key) -> Value? {
         get {
             value(forKey: key)
@@ -188,30 +231,26 @@ extension LLRBTree {
         }
     }
     
-    /// Get the value stored for given key, if such key exists in
-    /// this Left-Leaning Red-Black Tree instance.
+    /// Get the value stored for given key, if such key exists in this tree.
     ///
     /// - Parameter forKey: The key to use for retrieving the element's value.
-    /// - Returns:  The value stored in the element with such given key, `nil` if such
-    ///             element does not exist in this Left-Leaning Red-Black Tree instance.
-    /// - Complexity:   O(log *n*) where *n* is the count of
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// - Returns:  The value stored in the element with such given key,
+    ///             `nil` if such element does not exist in this tree.
+    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
     public func value(forKey key: Key) -> Value? {
         root?.value(forKey: key)
     }
     
-    /// Set the given value for the given key. If such key exists in
-    /// this Left-Leaning Red-Black Tree instance then the element's value with such key
-    /// gets updated to the given value; otherwise a new element with the given
-    /// key/value pair gets created and inserted in the tree.
+    /// Set the given value for the given key. If such key exists in this tree
+    /// then the element's value with such key gets updated to the given value;
+    /// otherwise a new element with the given key/value pair gets
+    /// created and inserted in the tree.
     ///
-    /// - Parameter value: the new value to set for the given key.
-    /// - Parameter forKey: The key to use for retrieving the element's value or
-    ///                     to insert in the tree if it doesn't exixts.
-    /// - Returns:  The value stored in the element with such given key, `nil` if such
-    ///             element does not exist in this Left-Leaning Red-Black Tree instance.
-    /// - Complexity:   Amortized O(log *n*) where *n* is the count of
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// - Parameter value: The new value to set for the given key.
+    /// - Parameter forKey: The key to use for retrieving the element to
+    ///                     update or to insert in the tree if it doesn't exists.
+    /// - Complexity:   Amortized O(log *n*) where *n* is
+    ///                 the lenght of this tree.
     public func setValue(_ value: Value, forKey key: Key) {
         if let r = root {
             r.setValue(value, forKey: key)
@@ -221,31 +260,31 @@ extension LLRBTree {
         root!.color = .black
     }
     
-    /// Removes the element with the given key from this Left-Leaning Red-Black Tree instance.
+    /// Removes the element with the given key from this tree.
     ///
     /// - Parameter forKey: The key of the element to remove.
-    /// - Complexity:   Amortized O(log *n*) where *n* is the count of
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// - Complexity:   Amortized O(log *n*) where *n* is
+    ///                 the lenght of this tree.
     public func removeValue(forKey key: Key) {
         root = root?.removingValue(forKey: key)
         root?.color = .black
     }
     
     /// Removes the element with the smallest key from
-    /// this Left-Leaning Red-Black Tree instance.
+    /// this tree.
     ///
-    /// - Complexity:   Amortized O(log *n*) where *n* is the count of
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// - Complexity:   Amortized O(log *n*) where *n* is
+    ///                 the lenght of this tree.
     public func removeValueForMinKey() {
         root = root?.removingValueForMinKey()
         root?.color = .black
     }
     
     /// Removes the element with the greatest key from
-    /// this Left-Leaning Red-Black Tree instance.
+    /// this tree.
     ///
-    /// - Complexity:   Amortized O(log *n*) where *n* is the count of
-    ///                 this Left-Leaning Red-Black Tree instance.
+    /// - Complexity:   Amortized O(log *n*) where *n* is
+    ///                 the lenght of this tree.
     public func removeValueForMaxKey() {
         root = root?.removingValueForMaxKey()
         root?.color = .black
@@ -317,18 +356,17 @@ extension LLRBTree: Sequence {
 
 // MARK: - Additional FP methods
 extension LLRBTree {
-    /// Returns a new Left-Leaning Red-Black Tree containing the keys of this
-    /// Left-Leaning Red-Black Tree with the values transformed by the given closure.
+    /// Returns a new tree containing the keys of this tree with
+    ///  the values transformed by the given closure.
     ///
     /// - Parameter transform:  A closure that transforms a value.
     ///                         transform accepts each value of the
-    ///                         Left-Leaning Red-Black Tree as its
+    ///                         tree as its
     ///                         parameter and returns a transformed value
     ///                         of the same or of a different type.
-    /// - Returns:  A Left-Leaning Red-Black Tree containing the keys and
-    ///             transformed values of this Left-Leaning Red-Black Tree.
-    /// - Complexity:   O(*n*) where *n* is the count of elements
-    ///                 in this Left-Leaning Red-Black Tree.
+    /// - Returns:  A tree containing the keys and transformed values
+    ///             of this tree.
+    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
     public func mapValues<T>(_ transform: (Value) throws -> T) rethrows -> LLRBTree<Key, T> {
         let mappedRoot = try root?.mapValues(transform)
         let transformed = LLRBTree<Key, T>()
@@ -337,11 +375,10 @@ extension LLRBTree {
         return transformed
     }
     
-    /// Returns a new Left-Leaning Red-Black Tree containing only the key-value
-    /// pairs that have non-nil values as the result of transformation by the given
-    /// closure.
+    /// Returns a new tree containing only the key-value pairs that have non-nil
+    /// values as the result of transformation by the given closure.
     ///
-    /// Use this method to receive a Left-Leaning Red-Black Tree  with non-optional
+    /// Use this method to receive a tree  with non-optional
     /// values when your transformation produces optional values.
     ///
     /// In this example, note the difference in the result of using mapValues and
@@ -363,17 +400,15 @@ extension LLRBTree {
     /// ```
     /// - Parameter transform:  A closure that transforms a value.
     ///                         transform accepts each value of the
-    ///                         Left-Leaning Red-Black Tree as its
+    ///                         tree as its
     ///                         parameter and returns an optional
     ///                         transformed value of the same or of a
     ///                         different type.
-    /// - Returns:  A Left-Leaning Red-Black Tree containing the keys and
+    /// - Returns:  A tree containing the keys and
     ///             non-nil transformed values of this
-    ///             Left-Leaning Red-Black Tree.
-    /// - Complexity:   O(*m* + *n*) where *n* is the count of elements
-    ///                 in this Left-Leaning Red-Black Tree,
-    ///                 and *m* is the count of the resulting
-    ///                 Left_Leaning Red-Black Tree.
+    ///             tree.
+    /// - Complexity:   O(*m* + *n*) where *n* is the lenght of this tree,
+    ///                 and *m* is the lenght of the returned tree.
     public func compactMapValues<T>(_ transform: (Value) throws -> T?) rethrows -> LLRBTree<Key, T> {
         let transformed = LLRBTree<Key, T>()
         try root?.forEach { element in
@@ -385,6 +420,23 @@ extension LLRBTree {
         return transformed
     }
     
+    /// Set the given value for the given key. If such key exists in this tree then the
+    /// element's value with such key gets updated to the result of the `combine`
+    /// closure called with the previously stored value and the new value.
+    /// Otherwise a new element with the given key/value pair gets
+    /// created and inserted in the tree.
+    ///
+    /// - Parameter value: The new value to set for the given key.
+    /// - Parameter forKey: The key to use for retrieving the element's value or
+    ///                     to insert in the tree if it doesn't exists.
+    /// - Parameter combine:    A closure that is called with the values
+    ///                         for a duplicate key that is encountered.
+    ///                         The closure returns the desired value for
+    ///                         updating the key.
+    /// - Complexity:   Amortized O(log *n*) where *n* is the
+    ///                 lenght of this tree.
+    ///                 Assuming given `combine` closure
+    ///                 has O(1) complexity.
     public func setValue(_ value: Value, forKey key: Key, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
         guard
             let root = root
@@ -394,10 +446,43 @@ extension LLRBTree {
             return
         }
         
-        try root.setValue(value, forKey: key, uniquingKeysWith: combine)
+        try root
+            .setValue(value, forKey: key, uniquingKeysWith: combine)
         root.color = .black
     }
     
+    /// Merges the key-value pairs in the given sequence into the tree, using a
+    /// combining closure to determine the value for any duplicate keys.
+    ///
+    /// Use the combine closure to select a value to use in the updated tree,
+    /// or to combine existing and new values.
+    /// As the key-value pairs are merged with the tree, the combine closure
+    /// is called with the current and new values for any duplicate keys
+    /// that are encountered.
+    ///
+    /// This example shows how to choose the current or new values
+    ///  for any duplicate keys:
+    ///
+    /// ```
+    ///     var tree: LLRBTree<String, Int> = ["a": 1, "b": 2]
+    ///
+    ///     // Keeping existing value for key "a":
+    ///     tree .merge(zip(["a", "c"], [3, 4])) { (current, _) in current }
+    ///     // ["b": 2, "a": 1, "c": 4]
+    ///
+    ///     // Taking the new value for key "a":
+    ///     tree.merge(zip(["a", "d"], [5, 6])) { (_, new) in new }
+    ///     // ["b": 2, "a": 5, "c": 4, "d": 6]
+    /// ```
+    /// - Parameter other: A sequence of key-value pairs.
+    /// - Parameter combine:    A closure that takes the current and new
+    ///                         values for any duplicate keys.
+    ///                         The closure returns the desired value
+    ///                         for the final tree.
+    /// - Complexity:   Amortized O(*m* + log *n*) where *m* is the lenght
+    ///                 of the given sequence, and *n* is the lenght of the
+    ///                 final tree.
+    ///                 Assuming `combine` closure has O(1) complexity.
     public func merge<S: Sequence>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S.Iterator.Element == Element {
         var otherIterator = other.makeIterator()
         guard
@@ -416,6 +501,39 @@ extension LLRBTree {
         }
     }
     
+    /// Creates a tree by merging key-value pairs in a sequence into the tree,
+    /// using a combining closure to determine the value for duplicate keys.
+    ///
+    /// Use the combine closure to select a value to use in the returned tree,
+    /// or to combine existing and new values.
+    /// As the key-value pairs are merged with the tree, the combine closure
+    ///  is called with the current and new values for any duplicate keys
+    ///  that are encountered.
+    ///
+    /// This example shows how to choose the current or new values
+    /// for any duplicate keys:
+    ///
+    /// ```
+    ///     let tree: LLRBTree<String, Int> = ["a": 1, "b": 2]
+    ///     let newKeyValues = zip(["a", "b"], [3, 4])
+    ///
+    ///     let keepingCurrent = tree.merging(newKeyValues) { (current, _) in current }
+    ///     // ["b": 2, "a": 1]
+    ///
+    ///     let replacingCurrent = tree.merging(newKeyValues) { (_, new) in new }
+    ///     // ["b": 4, "a": 3]
+    /// ```
+    /// - Parameter other: A sequence of key-value pairs.
+    /// - Parameter combine:    A closure that takes the current and new
+    ///                         values for any duplicate keys.
+    ///                         The closure returns the desired value
+    ///                         for the final tree.
+    /// - Returns:  A new tree with the combined keys and values
+    ///             of this tree and other.
+    /// - Complexity:   Amortized O(*m* + log *n*) where *m* is the
+    ///                 lenght of the given sequence, and *n* is the
+    ///                  lenght of the final tree.
+    ///                 Assuming `combine` has O(1) complexity.
     public func merging<S: Sequence>(_ other: S, niquingKeysWith combine: (Value, Value) throws -> Value) rethrows -> LLRBTree where S.Iterator.Element == Element {
         let new = self.copy() as! LLRBTree<Key, Value>
         try new
