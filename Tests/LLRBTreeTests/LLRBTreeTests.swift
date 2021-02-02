@@ -168,8 +168,98 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertEqual(sut.root?.map { $0.1 }, expectedElements.map { $0.1 })
     }
     
-    func testInitUniquingKeysWith() {
-        XCTFail("Ought implement this")
+    func testInitUniquingKeysWith_whenCombineThrows() {
+        let combine: (Int, Int) throws -> Int = { _, _ in
+            throw err
+        }
+        var keysAndValues: [(String, Int)] = []
+        // keysAndValues is empty,
+        // then doesn't throw initalizes an empty instance
+        XCTAssertNoThrow(try sut = LLRBTree(keysAndValues, uniquingKeysWith: combine))
+        XCTAssertNotNil(sut)
+        XCTAssertNil(sut.root)
+        
+        // keysAndValues doesn't contain any duplicate key,
+        // then doesn't throw and returns an instance with
+        // all elements from keysAndValues
+        keysAndValues = givenKeys.map { ($0, givenRandomValue()) }
+        XCTAssertNoThrow(try sut = LLRBTree(keysAndValues, uniquingKeysWith: combine))
+        XCTAssertNotNil(sut.root)
+        if let root = sut.root {
+            assertLeftLeaningRedBlackTreeInvariants(root: root)
+            assertEachNodeCountIsCorrect(root: root)
+        } else {
+            XCTFail("sut.root is not supposed to be nil")
+        }
+        for element in keysAndValues {
+            XCTAssertEqual(sut.value(forKey: element.0), element.1)
+        }
+        
+        // keysAndValues contains duplicate keys,
+        // then rethrows
+        keysAndValues.append(contentsOf: givenKeys.map { ($0, givenRandomValue()) })
+        XCTAssertThrowsError(try sut = LLRBTree(keysAndValues, uniquingKeysWith: combine))
+    }
+    
+    func testInitUniquingKeysWith_whenCombineDoesntThrows() {
+        var executed: Bool = false
+        let combine: (Int, Int) throws -> Int = { prev, next in
+            executed = true
+            return prev + next
+        }
+        
+        var keysAndValues: [(String, Int)] = []
+        // when keysAndValues is empty,
+        // combine never gets executed and returns empty instance
+        XCTAssertNoThrow(try sut = LLRBTree(keysAndValues, uniquingKeysWith: combine))
+        XCTAssertNotNil(sut)
+        XCTAssertNil(sut.root)
+        
+        // when keysAndValues doesn't contain duplicate keys,
+        // then combine doesn't get executed and returns instance
+        // containing all elements from keysAndValues
+        keysAndValues = givenKeys.map { ($0, givenRandomValue()) }
+        XCTAssertNoThrow(try sut = LLRBTree(keysAndValues, uniquingKeysWith: combine))
+        XCTAssertFalse(executed)
+        XCTAssertNotNil(sut.root)
+        if let root = sut.root {
+            assertLeftLeaningRedBlackTreeInvariants(root: root)
+            assertEachNodeCountIsCorrect(root: root)
+        } else {
+            XCTFail("sut.root is not supposed to be nil")
+        }
+        for element in keysAndValues {
+            XCTAssertEqual(sut.value(forKey: element.0), element.1)
+        }
+        
+        // when keysAndValues contains duplicate keys,
+        // then combine gets executed, and returns a non-empty
+        // instance which has for each duplicate key the value
+        // calculated by applying combine
+        let duplicateKey = keysAndValues.removeFirst().0
+        var duplicates: [(String, Int)] = []
+        for _ in 0..<3 {
+            duplicates.append((duplicateKey, givenRandomValue()))
+        }
+        keysAndValues.append(contentsOf: duplicates)
+        let initialValue = duplicates.removeFirst().1
+        let expectedValueForDuplicateKey = try? duplicates
+            .map { $0.1 }
+            .reduce(initialValue, combine)
+        executed = false
+        XCTAssertNoThrow(try sut = LLRBTree(keysAndValues, uniquingKeysWith: combine))
+        XCTAssertNotNil(sut.root)
+        XCTAssertTrue(executed)
+        XCTAssertEqual(sut.value(forKey: duplicateKey), expectedValueForDuplicateKey)
+        for element in keysAndValues.dropLast(3) {
+            XCTAssertEqual(sut.value(forKey: element.0), element.1)
+        }
+        if let root = sut.root {
+            assertLeftLeaningRedBlackTreeInvariants(root: root)
+            assertEachNodeCountIsCorrect(root: root)
+        } else {
+            XCTFail("sut.root is not supposed to be nil")
+        }
     }
     
     // MARK: - Computed properties tests
