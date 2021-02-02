@@ -1051,8 +1051,132 @@ final class LLRBTreeNodeTests: XCTestCase {
         }
     }
     
-    func testSetValueForKeyUniquingKeys() {
-        XCTFail("Ought implement this")
+    func testSetValueForKeyUniquingKeys_whenCombineThrows() {
+        let combine: (Int, Int) throws -> Int = { _, _ in
+            throw err
+        }
+        // node has no children:
+        XCTAssertNil(sut.left)
+        XCTAssertNil(sut.right)
+        
+        // when forKey is not equal to node key,
+        // then doesn't throw and adds new element
+        for k in givenKeys.filter({ $0 != sut.key }).shuffled() {
+            let newValue = givenRandomValue()
+            let prevCount = sut.count
+            XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
+            XCTAssertEqual(sut.count, prevCount + 1)
+            XCTAssertEqual(sut.value(forKey: k), newValue)
+            sut.color = .black
+            assertLeftLeaningRedBlackTreeInvariants(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
+        }
+        
+        // when forKey is equal to node key,
+        // then rethrows
+        XCTAssertThrowsError(try sut.setValue(givenRandomValue(), forKey: sut.key, uniquingKeysWith: combine))
+        
+        // node is a tree
+        whenBalancedTreeWithHalfGivenKeys()
+        var containedKeys = Set(sut.map { $0.0 })
+        let notContainedKeys = Set(givenKeys.filter { !containedKeys.contains($0) })
+        // when forKey is not a key in tree, then doesn't throw
+        // and adds to tree new element:
+        for k in notContainedKeys.shuffled() {
+            let newValue = givenRandomValue()
+            let prevCount = sut.count
+            XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
+            XCTAssertEqual(sut.count, prevCount + 1)
+            XCTAssertEqual(sut.value(forKey: k), newValue)
+            sut.color = .black
+            assertLeftLeaningRedBlackTreeInvariants(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
+        }
+        
+        // when forKey is a key in the tree,
+        // then rethrows
+        containedKeys = Set(sut.map { $0.0 })
+        for k in containedKeys.shuffled() {
+            XCTAssertThrowsError(try sut.setValue(givenRandomValue(), forKey: k, uniquingKeysWith: combine))
+        }
+    }
+    
+    func testSetValueForKeyUniquingKeys_whenCombineDoesnThrow() {
+        var executed: Bool = false
+        let combine: (Int, Int) throws -> Int = { prev, next in
+            executed = true
+            return prev + next
+        }
+        // node has no children
+        XCTAssertNil(sut.left)
+        XCTAssertNil(sut.right)
+        
+        // when forKey is not equal to node key,
+        // then combine doesn't get executed and adds new element
+        for k in givenKeys.filter({ $0 != sut.key }).shuffled() {
+            executed = false
+            let prevCount = sut.count
+            let newValue = givenRandomValue()
+            XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
+            XCTAssertFalse(executed)
+            XCTAssertEqual(sut.count, prevCount + 1)
+            XCTAssertEqual(sut.value(forKey: k), newValue)
+            sut.color = .black
+            assertLeftLeaningRedBlackTreeInvariants(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
+        }
+        
+        // when forKey is equal to node key, then combine gets
+        // executed and node value changes to result of combine
+        let prevCount = sut.count
+        let newValue = givenRandomValue()
+        let expectedValue = try? combine(sut.value, newValue)
+        executed = false
+        XCTAssertNoThrow(try sut.setValue(newValue, forKey: sut.key, uniquingKeysWith: combine))
+        XCTAssertTrue(executed)
+        XCTAssertEqual(sut.count, prevCount)
+        XCTAssertEqual(sut.value(forKey: sut.key), expectedValue)
+        assertLeftLeaningRedBlackTreeInvariants(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
+        
+        // node is a tree
+        whenBalancedTreeWithHalfGivenKeys()
+        var containedKeys = Set(sut.map { $0.0 })
+        let notContainedKeys = Set(givenKeys.filter({ !containedKeys.contains($0) }))
+        // when forKey is not contained in tree,
+        // then combine doesn't execute and new element is added
+        // to tree
+        for k in notContainedKeys.shuffled() {
+            executed = false
+            let prevCount = sut.count
+            let newValue = givenRandomValue()
+            XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
+            XCTAssertFalse(executed)
+            XCTAssertEqual(sut.count, prevCount + 1)
+            XCTAssertEqual(sut.value(forKey: k), newValue)
+            sut.color = .black
+            assertLeftLeaningRedBlackTreeInvariants(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
+        }
+        
+        // when forKey is in tree, then combine gets executed
+        // and element's value in tree with key == forKey is
+        // updated using combine
+        containedKeys = Set(sut.map { $0.0 })
+        for k in containedKeys {
+            let prevCount = sut.count
+            let prevValue = sut.value(forKey: k)!
+            let newValue = givenRandomValue()
+            let expectedValue = try? combine(prevValue, newValue)
+            executed = false
+            XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
+            XCTAssertTrue(executed)
+            XCTAssertEqual(sut.count, prevCount)
+            XCTAssertEqual(sut.value(forKey: k), expectedValue)
+            sut.color = .black
+            assertLeftLeaningRedBlackTreeInvariants(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
+        }
     }
     
     // MARK: - remove value for key
