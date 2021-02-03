@@ -54,12 +54,7 @@ final class LLRBTreeTests: XCTestCase {
     
     // MARK: - WHEN
     private func whenRootContainsAllGivenElements() {
-        let keys = givenKeys.shuffled()
-        sut.root = LLRBTree.Node(key: keys.first!, value: givenRandomValue(), color: .black)
-        for key in keys.dropFirst() {
-            sut.root!.setValue(givenRandomValue(), forKey: key)
-            sut.root!.color = .black
-        }
+        sut = LLRBTree(uniqueKeysWithValues: givenElements())
     }
     
     private func whenRootContainsHalfGivenElements() {
@@ -109,7 +104,7 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertEqual(rootElements?.map({ $0.1 }), expectedElements.map { $0.1 })
     }
     
-    // MARK: - Other convenience initializers tests
+    // MARK: - Other initializers tests
     func testInitUniqueKeysWithValues_whenSequenceIsAnotherLLRBTRee() {
         var other = LLRBTree<String, Int>()
         
@@ -803,7 +798,7 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertThrowsError(try sut.mapValues { _ in throw err })
         
         // when root is not nil and transform doesn't throw,
-        // the doesn't throw
+        // then doesn't throw
         XCTAssertNoThrow(try sut
                             .mapValues { _ throws -> String in
                                 
@@ -898,9 +893,7 @@ final class LLRBTreeTests: XCTestCase {
         // root is not nil, forKey is not in root,
         // then doesn't throw and adds new element
         whenRootContainsHalfGivenElements()
-        var containedKeys = Set(sut.map { $0.0 })
-        let notContainedKeys = Set(givenKeys.filter { !containedKeys.contains($0) })
-        for k in notContainedKeys.shuffled() {
+        for k in sutNotIncludedKeys.shuffled() {
             let newValue = givenRandomValue()
             let prevCount = sut.count
             XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
@@ -912,8 +905,7 @@ final class LLRBTreeTests: XCTestCase {
         
         // root is not nil and forKey is in tree,
         // then rethrows
-        containedKeys = Set(sut.map { $0.0 })
-        for k in containedKeys.shuffled() {
+        for k in sutIncludedKeys.shuffled() {
             let newValue = givenRandomValue()
             XCTAssertThrowsError(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
         }
@@ -926,7 +918,7 @@ final class LLRBTreeTests: XCTestCase {
             return prev + next
         }
         
-        // root is nil, then never gets executed
+        // root is nil, then combine never gets executed
         // and adds new element
         XCTAssertNil(sut.root)
         let newKey = givenKeys.randomElement()!
@@ -945,11 +937,9 @@ final class LLRBTreeTests: XCTestCase {
         
         // root is not nil
         whenRootContainsHalfGivenElements()
-        var containedKeys = Set(sut.map { $0.0 })
-        let notContainedKeys = Set(givenKeys.filter({ !containedKeys.contains($0) }))
-        // forKey is not contained,
+        // forKey is not contained in tree,
         // then combine never executes and new element is added
-        for k in notContainedKeys {
+        for k in sutNotIncludedKeys.shuffled() {
             let newValue = givenRandomValue()
             let prevCount = sut.count
             executed = false
@@ -963,8 +953,7 @@ final class LLRBTreeTests: XCTestCase {
         // forKey is contained,
         // then combine gets executed, element with that key
         // gets updated with combine result
-        containedKeys = Set(sut.map { $0.0 })
-        for k in containedKeys {
+        for k in sutIncludedKeys.shuffled() {
             let prevCount = sut.count
             let prevValue = sut.value(forKey: k)!
             let newValue = givenRandomValue()
@@ -1018,8 +1007,7 @@ final class LLRBTreeTests: XCTestCase {
         // any duplicate key, then doesn't rethrow and elements
         // from other get inserted
         whenRootContainsHalfGivenElements()
-        let notContainedKeys = givenKeys.filter({ sut.value(forKey: $0) == nil })
-        for k in notContainedKeys {
+        for k in sutNotIncludedKeys.shuffled() {
             other.setValue(givenRandomValue(), forKey: k)
         }
         let prevCount = sut.count
@@ -1083,8 +1071,7 @@ final class LLRBTreeTests: XCTestCase {
         // and elements from other get inserted
         whenRootContainsHalfGivenElements()
         other.root = nil
-        var notContainedKeys = givenKeys.filter({ sut.value(forKey: $0) == nil })
-        for k in notContainedKeys {
+        for k in sutNotIncludedKeys.shuffled() {
             other.setValue(givenRandomValue(), forKey: k)
         }
         var prevCount = sut.count
@@ -1112,8 +1099,7 @@ final class LLRBTreeTests: XCTestCase {
         // its results are set for elements with duplicate keys
         whenRootContainsHalfGivenElements()
         other.root = nil
-        notContainedKeys = givenKeys.filter({ sut.value(forKey: $0) == nil })
-        notContainedKeys.forEach {
+        sutNotIncludedKeys.forEach {
             other.setValue(givenRandomValue(), forKey: $0)
         }
         let elementsWithDuplicateKeys = sut
@@ -1124,12 +1110,13 @@ final class LLRBTreeTests: XCTestCase {
             .map { ($0.0.0, try! combine($0.0.1, $0.1.1)) }
         executed = false
         prevCount = sut.count
+        let prevNotIncludedKeys = sutNotIncludedKeys
         prevElements = sut.dropFirst(3).map { $0 }
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         XCTAssertTrue(executed)
-        XCTAssertEqual(sut.count, prevCount + notContainedKeys.count)
+        XCTAssertEqual(sut.count, prevCount + prevNotIncludedKeys.count)
         prevElements.forEach { XCTAssertEqual(sut.value(forKey: $0.0), $0.1) }
-        notContainedKeys.forEach { XCTAssertEqual(sut.value(forKey: $0), other.value(forKey: $0)) }
+        prevNotIncludedKeys.forEach { XCTAssertEqual(sut.value(forKey: $0), other.value(forKey: $0)) }
         expectedResultForDuplicateKeys.forEach { XCTAssertEqual(sut.value(forKey: $0.0), $0.1) }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
@@ -1155,8 +1142,7 @@ final class LLRBTreeTests: XCTestCase {
         // then returns a copy with merged elements
         whenRootContainsHalfGivenElements()
         var other = LLRBTree<String, Int>()
-        let notContainedKeys = givenKeys.filter({ sut.value(forKey: $0) == nil })
-        notContainedKeys.forEach {
+        sutNotIncludedKeys.forEach {
             other.setValue(givenRandomValue(), forKey: $0)
         }
         let elementsWithDuplicateKeys = sut
@@ -1168,14 +1154,15 @@ final class LLRBTreeTests: XCTestCase {
         executed = false
         var result: LLRBTree<String, Int>!
         let prevSut = sut!
+        let prevNotIncludedKeys = sutNotIncludedKeys
         XCTAssertNoThrow(try result = sut.merging(other, uniquingKeysWith: combine))
         XCTAssertTrue(executed)
         XCTAssertFalse(sut.root === result.root, "result.root instance is sut.root")
         XCTAssertFalse(result.root === other.root, "result.root instance is other.root")
         XCTAssertEqual(sut, prevSut)
-        XCTAssertEqual(result.count, prevSut.count + notContainedKeys.count)
+        XCTAssertEqual(result.count, prevSut.count + prevNotIncludedKeys.count)
         prevSut.dropFirst(3).forEach { XCTAssertEqual(result.value(forKey: $0.0), $0.1) }
-        notContainedKeys.forEach { XCTAssertEqual(result.value(forKey: $0), other.value(forKey: $0)) }
+        prevNotIncludedKeys.forEach { XCTAssertEqual(result.value(forKey: $0), other.value(forKey: $0)) }
         expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.value(forKey: $0.0), $0.1) }
         if let root = result.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
@@ -1292,9 +1279,10 @@ final class LLRBTreeTests: XCTestCase {
     
     // MARK: - Equatable conformance tests
     func testEquatable() {
-        // when lhs and rhs are same instance, then returns true
+        // when lhs and rhs have same root instance, then returns true
         var lhs = sut!
         var rhs = lhs
+        XCTAssertTrue(lhs.root === rhs.root, "lhs.root is not the same instance of rhs.root")
         XCTAssertEqual(lhs, rhs)
         
         // when lhs and rhs are not same instance:
@@ -1316,15 +1304,15 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNotNil(rhs.root)
         XCTAssertNotEqual(lhs, rhs)
         
-        // when both lhs and rhs have non nil root:
+        // when both lhs and rhs have non nil root…
         for _ in 0..<100 {
-            // …and when roots are equal, then returns true
+            // …when roots are equal, then returns true
             whenRootContainsHalfGivenElements()
             lhs = sut
             rhs.root = lhs.root?.copy() as? LLRBTree<String, Int>.Node
             XCTAssertEqual(lhs, rhs)
             
-            // …and when roots are not equal, then returns false:
+            // …when roots are not equal, then returns false:
             rhs.removeValueForMinKey()
             XCTAssertNotEqual(lhs.root, rhs.root)
             XCTAssertNotEqual(lhs, rhs)
@@ -1333,6 +1321,7 @@ final class LLRBTreeTests: XCTestCase {
     
     // MARK: - Codable tests
     
+    // MARK: - Hashable tests
     
 }
 
