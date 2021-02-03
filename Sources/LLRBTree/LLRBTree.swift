@@ -28,9 +28,9 @@
 
 import Foundation
 
-/// A reference semantics data structure generic over `Key` and  `Value` types,
+/// A valiue semantics data structure generic over `Key` and  `Value` types,
 /// storing its elements in a prefectly balanced binary search tree.
-public final class LLRBTree<Key: Comparable, Value>: NSCopying {
+public struct LLRBTree<Key: Comparable, Value> {
     var root: Node? = nil
     
     /// Instantiates and returns a new empty tree.
@@ -38,16 +38,11 @@ public final class LLRBTree<Key: Comparable, Value>: NSCopying {
     /// - Returns: A new empty tree.
     public init() { }
     
-    public func copy(with zone: NSZone? = nil) -> Any {
-        
-        return LLRBTree(self)
-    }
-    
 }
 
-// MARK: - ExpressibleByDictionaryLiteral conformance & other convenience initializers
+// MARK: - ExpressibleByDictionaryLiteral conformance & other initializers
 extension LLRBTree: ExpressibleByDictionaryLiteral {
-    public convenience init(dictionaryLiteral elements: (Key, Value)...) {
+    public init(dictionaryLiteral elements: (Key, Value)...) {
         self.init(uniqueKeysWithValues: elements)
     }
     
@@ -68,7 +63,7 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
     ///         Use `init(_:uniquingKeysWith:)` in case the sequence
     ///         might contain elements with duplicate keys.
     /// - Precondition: The sequence must not have duplicate keys.
-    public convenience init<S: Sequence>(uniqueKeysWithValues keysAndValues: S) where S.Iterator.Element == Element {
+    public init<S: Sequence>(uniqueKeysWithValues keysAndValues: S) where S.Iterator.Element == Element {
         if let other = keysAndValues as? LLRBTree<Key, Value> {
             self.init(other)
         } else {
@@ -128,12 +123,12 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
     ///                 lenght of the given sequence,  and *n*is  the lenght of
     ///                 the the final tree.
     ///                 Assuming `combine` closure has O(1) complexity.
-    public convenience init<S>(_ keysAndValues: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S : Sequence, S.Iterator.Element == Element {
+    public init<S>(_ keysAndValues: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S : Sequence, S.Iterator.Element == Element {
         self.init()
         try self.merge(keysAndValues, uniquingKeysWith: combine)
     }
     
-    convenience init(_ other: LLRBTree) {
+    init(_ other: LLRBTree) {
         self.init()
         
         if let rootClone = other.root?.copy() {
@@ -222,7 +217,7 @@ extension LLRBTree {
             value(forKey: key)
         }
         
-        set {
+        mutating set {
             if let value = newValue {
                 setValue(value, forKey: key)
             } else {
@@ -251,9 +246,10 @@ extension LLRBTree {
     ///                     update or to insert in the tree if it doesn't exists.
     /// - Complexity:   Amortized O(log *n*) where *n* is
     ///                 the lenght of this tree.
-    public func setValue(_ value: Value, forKey key: Key) {
-        if let r = root {
-            r.setValue(value, forKey: key)
+    public mutating func setValue(_ value: Value, forKey key: Key) {
+        if root != nil {
+            makeUnique()
+            root!.setValue(value, forKey: key)
         } else {
             root = LLRBTree.Node(key: key, value: value)
         }
@@ -265,7 +261,8 @@ extension LLRBTree {
     /// - Parameter forKey: The key of the element to remove.
     /// - Complexity:   Amortized O(log *n*) where *n* is
     ///                 the lenght of this tree.
-    public func removeValue(forKey key: Key) {
+    public mutating func removeValue(forKey key: Key) {
+        makeUnique()
         root = root?.removingValue(forKey: key)
         root?.color = .black
     }
@@ -275,7 +272,8 @@ extension LLRBTree {
     ///
     /// - Complexity:   Amortized O(log *n*) where *n* is
     ///                 the lenght of this tree.
-    public func removeValueForMinKey() {
+    public mutating func removeValueForMinKey() {
+        makeUnique()
         root = root?.removingValueForMinKey()
         root?.color = .black
     }
@@ -285,7 +283,8 @@ extension LLRBTree {
     ///
     /// - Complexity:   Amortized O(log *n*) where *n* is
     ///                 the lenght of this tree.
-    public func removeValueForMaxKey() {
+    public mutating func removeValueForMaxKey() {
+        makeUnique()
         root = root?.removingValueForMaxKey()
         root?.color = .black
     }
@@ -369,7 +368,7 @@ extension LLRBTree {
     /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
     public func mapValues<T>(_ transform: (Value) throws -> T) rethrows -> LLRBTree<Key, T> {
         let mappedRoot = try root?.mapValues(transform)
-        let transformed = LLRBTree<Key, T>()
+        var transformed = LLRBTree<Key, T>()
         transformed.root = mappedRoot
         
         return transformed
@@ -410,7 +409,7 @@ extension LLRBTree {
     /// - Complexity:   O(*m* + *n*) where *n* is the lenght of this tree,
     ///                 and *m* is the lenght of the returned tree.
     public func compactMapValues<T>(_ transform: (Value) throws -> T?) rethrows -> LLRBTree<Key, T> {
-        let transformed = LLRBTree<Key, T>()
+        var transformed = LLRBTree<Key, T>()
         try root?.forEach { element in
             if let t = try transform(element.1) {
                 transformed.setValue(t, forKey: element.0)
@@ -437,18 +436,18 @@ extension LLRBTree {
     ///                 lenght of this tree.
     ///                 Assuming given `combine` closure
     ///                 has O(1) complexity.
-    public func setValue(_ value: Value, forKey key: Key, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
+    public mutating func setValue(_ value: Value, forKey key: Key, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
         guard
-            let root = root
+            root != nil
         else {
             setValue(value, forKey: key)
             
             return
         }
-        
-        try root
+        makeUnique()
+        try root!
             .setValue(value, forKey: key, uniquingKeysWith: combine)
-        root.color = .black
+        root!.color = .black
     }
     
     /// Merges the key-value pairs in the given sequence into the tree, using a
@@ -483,14 +482,15 @@ extension LLRBTree {
     ///                 of the given sequence, and *n* is the lenght of the
     ///                 final tree.
     ///                 Assuming `combine` closure has O(1) complexity.
-    public func merge<S: Sequence>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S.Iterator.Element == Element {
+    public mutating func merge<S: Sequence>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S.Iterator.Element == Element {
         var otherIterator = other.makeIterator()
         guard
             let otherRootElement = otherIterator.next()
         else { return }
         
-        if let root = root {
-            try root.setValue(otherRootElement.1, forKey: otherRootElement.0, uniquingKeysWith: combine)
+        if root != nil {
+            makeUnique()
+            try root!.setValue(otherRootElement.1, forKey: otherRootElement.0, uniquingKeysWith: combine)
         } else {
             root = LLRBTree.Node(key: otherRootElement.0, value: otherRootElement.1, color: .black)
         }
@@ -535,7 +535,7 @@ extension LLRBTree {
     ///                  lenght of the final tree.
     ///                 Assuming `combine` has O(1) complexity.
     public func merging<S: Sequence>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows -> LLRBTree where S.Iterator.Element == Element {
-        let new = self.copy() as! LLRBTree<Key, Value>
+        var new = self
         try new
             .merge(other, uniquingKeysWith: combine)
         
@@ -601,7 +601,7 @@ extension LLRBTree {
 // MARK: - Equatable conformance
 extension LLRBTree: Equatable where Value: Equatable {
     public static func == (lhs: LLRBTree<Key, Value>, rhs: LLRBTree<Key, Value>) -> Bool {
-        guard lhs !== rhs else { return true }
+        guard lhs.root !== rhs.root else { return true }
         
         switch (lhs.root, rhs.root) {
         case (nil, nil): break
@@ -634,7 +634,7 @@ extension LLRBTree: Codable where Key: Codable, Value: Codable {
         try container.encode(elements.map { $0.1 }, forKey: .values)
     }
     
-    public convenience init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let keys = try container.decode(Array<Key>.self, forKey: .keys)
         let values = try container.decode(Array<Value>.self, forKey: .values)
@@ -656,6 +656,16 @@ extension LLRBTree: Hashable where Key: Hashable, Value: Hashable {
         root?.forEach {
             hasher.combine($0.0)
             hasher.combine($0.1)
+        }
+    }
+    
+}
+
+// MARK: - Copy On Write helper
+extension LLRBTree {
+    mutating func makeUnique() {
+        if !isKnownUniquelyReferenced(&root) {
+            root = root?.copy() as? LLRBTree<Key, Value>.Node
         }
     }
     

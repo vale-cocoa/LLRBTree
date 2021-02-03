@@ -79,23 +79,6 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNotNil(sut.root)
     }
     
-    // MARK: - NSCopying conformance tests
-    func testCopyWith_whenRootIsNil() {
-        XCTAssertNil(sut.root)
-        let clone = sut.copy() as? LLRBTree<String, Int>
-        XCTAssertNotNil(clone, "copy has returned an instance of a different type")
-        XCTAssertNil(clone?.root)
-        XCTAssertFalse(sut === clone, "copy returned the same instance instead of a new")
-    }
-    
-    func testCopyWith_whenRootIsNotNil() {
-        whenRootContainsAllGivenElements()
-        let clone = sut.copy() as! LLRBTree<String, Int>
-        XCTAssertNotNil(clone.root, "copy has not copied root")
-        XCTAssertEqual(sut.root, clone.root)
-        XCTAssertFalse(sut.root === clone.root, "copy was not deep")
-    }
-    
     // MARK: - ExpressibleByDictionaryLiteral conformance
     func testInitDictionaryLiteral() {
         sut = [:]
@@ -128,7 +111,7 @@ final class LLRBTreeTests: XCTestCase {
     
     // MARK: - Other convenience initializers tests
     func testInitUniqueKeysWithValues_whenSequenceIsAnotherLLRBTRee() {
-        let other = LLRBTree<String, Int>()
+        var other = LLRBTree<String, Int>()
         
         // other's root is nil
         sut = LLRBTree(other)
@@ -997,7 +980,7 @@ final class LLRBTreeTests: XCTestCase {
     }
     
     func testMergeUniquingKeysWith_whenCombineThrows() {
-        let other = LLRBTree<String, Int>()
+        var other = LLRBTree<String, Int>()
         let combine: (Int, Int) throws -> Int = { _, _ in
             throw err
         }
@@ -1069,7 +1052,7 @@ final class LLRBTreeTests: XCTestCase {
             executed = true
             return prev + next
         }
-        let other = LLRBTree<String, Int>()
+        var other = LLRBTree<String, Int>()
         
         // root is nil and other is empty,
         // then combine doesn't execute and sut.root == nil
@@ -1171,7 +1154,7 @@ final class LLRBTreeTests: XCTestCase {
         // not empty and contains duplicate keys,
         // then returns a copy with merged elements
         whenRootContainsHalfGivenElements()
-        let other = LLRBTree<String, Int>()
+        var other = LLRBTree<String, Int>()
         let notContainedKeys = givenKeys.filter({ sut.value(forKey: $0) == nil })
         notContainedKeys.forEach {
             other.setValue(givenRandomValue(), forKey: $0)
@@ -1184,11 +1167,11 @@ final class LLRBTreeTests: XCTestCase {
             .map { ($0.0.0, try! combine($0.0.1, $0.1.1)) }
         executed = false
         var result: LLRBTree<String, Int>!
-        let prevSut = sut!.copy() as! LLRBTree<String, Int>
+        let prevSut = sut!
         XCTAssertNoThrow(try result = sut.merging(other, uniquingKeysWith: combine))
         XCTAssertTrue(executed)
-        XCTAssertFalse(sut === result, "result instance is sut")
-        XCTAssertFalse(result === other, "result instance is other")
+        XCTAssertFalse(sut.root === result.root, "result.root instance is sut.root")
+        XCTAssertFalse(result.root === other.root, "result.root instance is other.root")
         XCTAssertEqual(sut, prevSut)
         XCTAssertEqual(result.count, prevSut.count + notContainedKeys.count)
         prevSut.dropFirst(3).forEach { XCTAssertEqual(result.value(forKey: $0.0), $0.1) }
@@ -1317,7 +1300,6 @@ final class LLRBTreeTests: XCTestCase {
         // when lhs and rhs are not same instance:
         // then returns true when both have root == nil
         rhs = LLRBTree()
-        XCTAssertFalse(lhs === rhs, "are same instance")
         XCTAssertNil(lhs.root)
         XCTAssertNil(rhs.root)
         XCTAssertEqual(lhs, rhs)
