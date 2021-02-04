@@ -605,8 +605,17 @@ extension LLRBTree: Equatable where Value: Equatable {
         
         switch (lhs.root, rhs.root) {
         case (nil, nil): break
-        case (let lRoot, let rRoot) where lRoot == rRoot: break
-        default: return false
+        case (nil, _): return false
+        case (_, nil): return false
+        case (let lRoot, let rRoot):
+            for (lElement, rElement) in zip(lRoot!, rRoot!) {
+                guard
+                    lElement.0 == rElement.0,
+                    lElement.1 == rElement.1
+                else { return false }
+            }
+            
+            break
         }
         
         return true
@@ -659,9 +668,15 @@ extension LLRBTree: Hashable where Key: Hashable, Value: Hashable {
         }
     }
     
+    public var hashValue: Int {
+            var hasher = Hasher()
+            self.hash(into: &hasher)
+            return hasher.finalize()
+    }
+    
 }
 
-// MARK: - Copy On Write helper
+// MARK: - Copy On Write helpers
 extension LLRBTree {
     mutating func makeUnique() {
         if !isKnownUniquelyReferenced(&root) {

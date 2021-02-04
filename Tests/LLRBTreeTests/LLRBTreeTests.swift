@@ -1320,8 +1320,80 @@ final class LLRBTreeTests: XCTestCase {
     }
     
     // MARK: - Codable tests
+    func testEncodeThenDecode() {
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+        // when root is nil
+        XCTAssertNil(sut.root)
+        var data: Data!
+        var decoded: LLRBTree<String, Int>!
+        XCTAssertNoThrow(data = try encoder.encode(sut))
+        XCTAssertNotNil(data)
+        XCTAssertNoThrow(decoded = try decoder.decode(LLRBTree<String, Int>.self, from: data))
+        XCTAssertNil(decoded.root)
+        
+        // when root is not nil
+        whenRootContainsHalfGivenElements()
+        XCTAssertNoThrow(data = try encoder.encode(sut))
+        XCTAssertNotNil(data)
+        XCTAssertNoThrow(decoded = try decoder.decode(LLRBTree<String, Int>.self, from: data))
+        XCTAssertNotNil(decoded.root)
+        XCTAssertEqual(sut!.map { $0.0 }, decoded.map { $0.0 })
+        XCTAssertEqual(sut!.map { $0.1 }, decoded.map { $0.1 })
+        XCTAssertFalse(sut.root === decoded.root, "sut.root should a different instance than decoded.root")
+    }
+    
+    func testDecode_whenKeysAndValuesAreDifferentCount_thenThrows() {
+        let data = try! JSONSerialization.data(withJSONObject: malformedJSONDifferentCounts, options: .prettyPrinted)
+        XCTAssertThrowsError(try sut =  JSONDecoder().decode(LLRBTree<String, Int>.self, from: data))
+        do {
+            sut = try JSONDecoder().decode(LLRBTree<String, Int>.self, from: data)
+        } catch {
+            XCTAssertEqual(error as NSError, LLRBTree<String, Int>.Error.valueForKeyCount as NSError)
+        }
+    }
+    
+    func testDecode_whenKeysContainsDuplicates_thenThrows() {
+        let data = try! JSONSerialization.data(withJSONObject: malformedJSONDuplicateKeys, options: .prettyPrinted)
+        XCTAssertThrowsError(try sut =  JSONDecoder().decode(LLRBTree<String, Int>.self, from: data))
+        do {
+            sut = try JSONDecoder().decode(LLRBTree<String, Int>.self, from: data)
+        } catch {
+            XCTAssertEqual(error as NSError, LLRBTree<String, Int>.Error.duplicateKeys as NSError)
+        }
+    }
     
     // MARK: - Hashable tests
+    func testHashableConformance() {
+        var set: Set<LLRBTree<String, Int>> = []
+        
+        // when root is nil and other.root is nil too,
+        // then are considered identical by Set
+        XCTAssertNil(sut.root)
+        set.insert(sut)
+        XCTAssertFalse(set.insert(LLRBTree<String, Int>()).inserted)
+        
+        // when root is not nil and other has same root,
+        // then are considered identical by Set
+        set.removeAll()
+        whenRootContainsHalfGivenElements()
+        set.insert(sut)
+        var other = sut!
+        XCTAssertFalse(set.insert(other).inserted)
+        // when root is not nil and other has different count
+        // of elements, then are considered not identical by
+        // Set
+        other.removeValueForMinKey()
+        XCTAssertTrue(set.insert(other).inserted)
+        
+        // when root is not nil, and other root is a different
+        // red-black tree but holds same elements, then
+        // are considered identical by Set.
+        other.root = nil
+        sut.forEach { other.setValue($0.1, forKey: $0.0) }
+        XCTAssertNotEqual(sut.root, other.root)
+        XCTAssertFalse(set.insert(other).inserted)
+    }
     
 }
 

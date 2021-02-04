@@ -188,3 +188,26 @@ let alwaysThrowingPredicate: ((String, Int)) throws -> Bool = { _ in
 let neverThrowingPredicate: ((String, Int)) throws -> Bool = { _ throws -> Bool in
     return true
 }
+
+// MARK: - helpers for testing decode throwing
+let malformedJSONDifferentCounts: [String : Any] = {
+    let lessValues = givenKeys
+        .dropLast(5)
+        .map { _ in givenRandomValue() }
+    
+    return [
+    "keys" : givenKeys,
+    "values" : lessValues
+    ]
+}()
+
+let malformedJSONDuplicateKeys: [String : Any] = {
+    let keysWithDuplicates = givenKeys + givenKeys
+    let values = keysWithDuplicates
+        .map { _ in givenRandomValue()}
+    
+    return [
+    "keys" : keysWithDuplicates,
+    "values" : values
+    ]
+}()
