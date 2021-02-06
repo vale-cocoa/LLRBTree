@@ -472,7 +472,7 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNil(sut.root, "root is not nil after all its elements have been removed")
     }
     
-    // MARK: - rank(_:), floor(_:), ceiling(_:), selection(rank:) methods tests
+    // MARK: - rank(_:), floor(_:), ceiling(_:), select(position:) methods tests
     // MARK: - rank(_:) tests
     func testRank() {
         // when root is nil, then returns 0 for any key
@@ -569,13 +569,13 @@ final class LLRBTreeTests: XCTestCase {
         }
     }
     
-    // MARK: - select(rank:) tests
+    // MARK: - select(position:) tests
     func testSelect() {
         // returns i-th element of enumerated where i is equal to rank
         whenRootContainsHalfGivenElements()
         for rank in 0..<sut.count {
             for (i, expectedResult) in sut.enumerated() where i == rank {
-                let result = sut.selection(rank: rank)
+                let result = sut.select(position: rank)
                 XCTAssertEqual(result.0, expectedResult.0)
                 XCTAssertEqual(result.1, expectedResult.1)
             }

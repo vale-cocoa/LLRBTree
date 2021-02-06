@@ -293,11 +293,41 @@ extension LLRBTree {
 
 // MARK: - rank(_:), floor(_:), ceiling(_:), selection(rank:) methods
 extension LLRBTree {
-    /// Get the postion of the given key in this tree, assuming keys  are positionioted
-    /// in ascendending order in the range `0...count` as positions.
+    /// Get the postion of the given key in this tree, assuming keys in the tree are in
+    /// ascendending order in the range `0..<count` as position values.
     ///
-    /// The rank of a key in tree tells us how many keys in the tree have values less
-    /// than that key in the tree.
+    /// The rank of a key in the tree tells us how many keys in that tree have value less
+    /// than that key.
+    /// Following is a trival example:
+    ///
+    /// ```
+    ///     let tree: LLRBTree<String, Int> = [
+    ///         "B" : 4,
+    ///         "D" : 6,
+    ///         "E" : -1,
+    ///         "F" : 13,
+    ///     ]
+    ///
+    ///     print(tree.rank("A"))
+    ///     // prints 0
+    ///     // because there is no smaller key than "A" in tree
+    ///
+    ///     print(tree.rank("B"))
+    ///     // prints 0
+    ///     // because there is no smaller key than "B" in tree
+    ///
+    ///     print(tree.rank("C"))
+    ///     // prints 1
+    ///     // because there is 1 smaller key than "C" in tree
+    ///
+    ///     print(tree.rank("F"))
+    ///     // prints 3
+    ///     // because there are 3 smaller keys than "F" in tree
+    ///
+    ///     print(tree.rank("H"))
+    ///     // prints 4
+    ///     // because there are 4 smaller keys than "H" in tree
+    /// ```
     /// - Parameter key: The key to look for its rank.
     /// - Returns:  An `Int` value representing the position of the given key
     ///             in this tree.
@@ -310,9 +340,10 @@ extension LLRBTree {
         return root.rank(key)
     }
     
-    /// Get the largest included key in this tree, which is smaller than or equal to given key.
+    /// Get the largest included key in this tree, which is smaller than or equal
+    /// to the given key.
     ///
-    /// - Parameter key: The key to look for its floor key on this tree.
+    /// - Parameter key: The key to look for its floor key in this tree.
     /// - Returns:  The greatest included key in this tree, which is smaller than
     ///             or equal to given the key or `nil` if such key doesn't
     ///             exist in this tree.
@@ -325,7 +356,7 @@ extension LLRBTree {
     /// Get the smallest included key in this tree, which is larger than or equal
     /// to the given key.
     ///
-    /// - Parameter key: The key to look for its ceil key on this tree.
+    /// - Parameter key: The key to look for its ceil key in this tree.
     /// - Returns:  The smallest included key in this tree, which is greater
     ///             than or equal to the given key or `nil` if such key doesn't
     ///             exists in this tree.
@@ -335,20 +366,44 @@ extension LLRBTree {
         return root?.ceiling(key)?.key
     }
     
-    /// Get the element from this tree with the given rank.
+    /// Get the element from this tree at the given position, assuming each element
+    /// is in ascending order in the range of `0..<count` as positions.
     ///
-    /// - Parameter rank:   An `Int` value representing the rank in this tree
-    ///                     of the element to retrieve by.
-    ///                     **Must be positive and less than this tree lenght**.
-    /// - Returns: The element in this tree associated to the given rank value.
+    /// Following is a trivial example of `select(position:)` usage
+    ///
+    /// ```
+    ///     let tree: LLRBTree<String, Int> = [
+    ///         "A" : 10,
+    ///         "B" : 20,
+    ///         "C" : 15,
+    ///         "D" : 7,
+    ///         "E" : 1
+    ///     ]
+    ///
+    ///     let firstElement = tree.select(0)
+    ///     // firstElement is ("A", 10)
+    ///
+    ///     let lastElement = tree.select(4)
+    ///     // lastElements is ("E", 1)
+    ///
+    ///     for (postion, element) in tree.enumerated() {
+    ///         let selected = tree.select(position)
+    ///         // selected.key == element.key
+    ///         // selected.value == element.value
+    ///     }
+    /// ```
+    /// - Parameter position:   An `Int` value representing the position
+    ///                         in this tree of the element to retrieve.
+    ///                         **Must be positive and less than this tree lenght**.
+    /// - Returns: The element in this tree at the given position.
     /// - Complexity: O(log *n*) where *n* is the lenght of this tree.
     /// - Precondition: The tree must not be empty and the given
-    ///                 `rank` value must be in range `0..<count`.
-    public func selection(rank: Int) -> Element {
+    ///                 `position` value must be in range `0..<count`.
+    public func select(position: Int) -> Element {
         precondition(!isEmpty, "cannot use select(rank:) when isEmpty == true")
-        precondition(0..<count ~= rank, "rank is out of bounds")
+        precondition(0..<count ~= position, "rank is out of bounds")
         
-        return root!.selection(rank: rank).element
+        return root!.selection(rank: position).element
     }
     
 }
