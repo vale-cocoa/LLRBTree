@@ -343,6 +343,30 @@ extension LLRBTree {
     /// Get the largest included key in this tree, which is smaller than or equal
     /// to the given key.
     ///
+    /// Following is an example of `floor(_:)` usage:
+    /// ```
+    ///     let tree: LLRBTree<String, Int> = [
+    ///         "B" : 4,
+    ///         "D" : 6,
+    ///         "E" : -1,
+    ///         "F" : 13,
+    ///     ]
+    ///
+    ///     print(tree.floor("A"))
+    ///     // prints nil since there is not a key in the tree
+    ///     // preceding or equal to given key "A".
+    ///
+    ///     print(tree.floor("B"))
+    ///     // prints "B" since "B" is in the tree.
+    ///
+    ///     print(tree.floor("C"))
+    ///     // prints "B" since that is the key in tree
+    ///     // immediately preceding given key "C".
+    ///
+    ///     print(tree.floor("L"))
+    ///     // prints "F" since that is the key in tree
+    ///     // immediately preceding given key "L"
+    /// ```
     /// - Parameter key: The key to look for its floor key in this tree.
     /// - Returns:  The greatest included key in this tree, which is smaller than
     ///             or equal to given the key or `nil` if such key doesn't
@@ -356,6 +380,30 @@ extension LLRBTree {
     /// Get the smallest included key in this tree, which is larger than or equal
     /// to the given key.
     ///
+    /// Following is an example of `ceiling(_:)` usage:
+    /// ```
+    ///     let tree: LLRBTree<String, Int> = [
+    ///         "B" : 4,
+    ///         "D" : 6,
+    ///         "E" : -1,
+    ///         "F" : 13,
+    ///     ]
+    ///
+    ///     print(tree.ceiling("A"))
+    ///     // prints "B" since that is the key in tree
+    ///     // immediately after given "A" key
+    ///
+    ///     print(tree.ceiling("B"))
+    ///     // prints "B" since "B" is in the tree.
+    ///
+    ///     print(tree.ceiling("C"))
+    ///     // prints "D" since that is the key in tree
+    ///     // immediately after given key "C".
+    ///
+    ///     print(tree.ceiling("L"))
+    ///     // prints nil since in tree there is no key
+    ///     // equals to or immediately after given key "L".
+    /// ```
     /// - Parameter key: The key to look for its ceil key in this tree.
     /// - Returns:  The smallest included key in this tree, which is greater
     ///             than or equal to the given key or `nil` if such key doesn't
