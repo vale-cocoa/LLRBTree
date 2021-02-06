@@ -293,22 +293,57 @@ extension LLRBTree {
 
 // MARK: - rank(_:), floor(_:), ceiling(_:), selection(rank:) methods
 extension LLRBTree {
+    /// Get the postion of the given key in this tree, assuming keys  are positionioted
+    /// in ascendending order in the range `0...count` as positions.
+    ///
+    /// The rank of a key in tree tells us how many keys in the tree have values less
+    /// than that key in the tree.
+    /// - Parameter key: The key to look for its rank.
+    /// - Returns:  An `Int` value representing the position of the given key
+    ///             in this tree.
+    /// - Complexity: O(log*n*) where *n* is the lenght of this tree.
+    /// - Note: When the given key is not in the tree, than the returned rank value
+    ///         is the insert postion in the range `0...count`.
     public func rank(_ key: Key) -> Int {
         guard let root = root else { return 0 }
         
         return root.rank(key)
     }
     
+    /// Get the largest included key in this tree, which is smaller than or equal to given key.
+    ///
+    /// - Parameter key: The key to look for its floor key on this tree.
+    /// - Returns:  The greatest included key in this tree, which is smaller than
+    ///             or equal to given the key or `nil` if such key doesn't
+    ///             exist in this tree.
+    /// - Complexity: O(log*n*) where *n* is the lenght of this tree.
     public func floor(_ key: Key) -> Key? {
         
         return root?.floor(key)?.key
     }
     
+    /// Get the smallest included key in this tree, which is larger than or equal
+    /// to the given key.
+    ///
+    /// - Parameter key: The key to look for its ceil key on this tree.
+    /// - Returns:  The smallest included key in this tree, which is greater
+    ///             than or equal to the given key or `nil` if such key doesn't
+    ///             exists in this tree.
+    /// - Complexity: O(log*n*) where *n* is the lenght of this tree.
     public func ceiling(_ key: Key) -> Key? {
         
         return root?.ceiling(key)?.key
     }
     
+    /// Get the element from this tree with the given rank.
+    ///
+    /// - Parameter rank:   An `Int` value representing the rank in this tree
+    ///                     of the element to retrieve by.
+    ///                     **Must be positive and less than this tree lenght**.
+    /// - Returns: The element in this tree associated to the given rank value.
+    /// - Complexity: O(log *n*) where *n* is the lenght of this tree.
+    /// - Precondition: The tree must not be empty and the given
+    ///                 `rank` value must be in range `0..<count`.
     public func selection(rank: Int) -> Element {
         precondition(!isEmpty, "cannot use select(rank:) when isEmpty == true")
         precondition(0..<count ~= rank, "rank is out of bounds")
