@@ -577,6 +577,341 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertTrue(sut.hasRedLeftGrandChild)
     }
     
+    // MARK: - rank(_:), floor(_:), ceiling(_:) and selection(rank:) methods tests
+    // MARK: - rank(_:) tests
+    func testRankWhenBothChildrenAreNil() {
+        XCTAssertNil(sut.left)
+        XCTAssertNil(sut.right)
+        
+        // k < node.key then returns 0
+        let smallerKey = givenAllSmallerKeysThanSutKey().randomElement()!
+        XCTAssertEqual(sut.rank(smallerKey), 0)
+        
+        // k == node.key, then returns 0
+        XCTAssertEqual(sut.rank(sut.key), 0)
+        
+        // k > node.key, then returns 1
+        let largerKey = givenAllLargerKeysThanSutKey().randomElement()!
+        XCTAssertEqual(sut.rank(largerKey), 1)
+    }
+    
+    func testRankWhenEitherOrBothChildrenAreNotNil() {
+        whenBalancedTreeWithHalfGivenKeys()
+        let leftTree = sut.left!
+        let rightTree = sut.right!
+        
+        // left is nil, right is not nil
+        sut.left = nil
+        
+        // k < node.key, then returns 0
+        for smallerKey in givenAllSmallerKeysThanSutKey() {
+            XCTAssertEqual(sut.rank(smallerKey), 0)
+        }
+        // k == node.key, then returns 0
+        XCTAssertEqual(sut.rank(sut.key), 0)
+        // k > node.key, then returns 1 + node.right.rank(k)
+        for greaterKey in givenAllLargerKeysThanSutKey() {
+            let rRank = rightTree.rank(greaterKey)
+            XCTAssertEqual(sut.rank(greaterKey), 1 + rRank)
+        }
+        
+        // left is not nil, right is nil
+        sut.left = leftTree
+        sut.right = nil
+        // k < node.key, then returns left.rank(k)
+        for smallerKey in givenAllSmallerKeysThanSutKey() {
+            let lRank = leftTree.rank(smallerKey)
+            XCTAssertEqual(sut.rank(smallerKey), lRank)
+        }
+        // k == node.key, then returns node.left.count
+        XCTAssertEqual(sut.rank(sut.key), leftTree.count)
+        // k > node.key, then returns node.left.count + 1
+        for greaterKey in givenAllLargerKeysThanSutKey() {
+            XCTAssertEqual(sut.rank(greaterKey), 1 + leftTree.count)
+        }
+        
+        // both left and right are not nil
+        sut.right = rightTree
+        // k < node.key, then returns left.rank(k)
+        for smallerKey in givenAllSmallerKeysThanSutKey() {
+            let lRank = leftTree.rank(smallerKey)
+            XCTAssertEqual(sut.rank(smallerKey), lRank)
+        }
+        // k == node.key, then returns node.left.count
+        XCTAssertEqual(sut.rank(sut.key), leftTree.count)
+        // k > node.key, then returns node.left.count + 1 + right.rank(k)
+        for greaterKey in givenAllLargerKeysThanSutKey() {
+            XCTAssertEqual(sut.rank(greaterKey), 1 + leftTree.count + rightTree.rank(greaterKey))
+        }
+    }
+    
+    // MARK: - floor(_:) tests
+    func testFloor_whenBothChildrenAreNil() {
+        XCTAssertNil(sut.left)
+        XCTAssertNil(sut.right)
+        // k == node.key, then returns node
+        XCTAssertNotNil(sut.floor(sut.key))
+        XCTAssertTrue(sut.floor(sut.key) === sut, "should have returned sut instance")
+        // k < node.key, then returns nil
+        for k in givenAllSmallerKeysThanSutKey() {
+            XCTAssertNil(sut.floor(k))
+        }
+        // k > node.key, then returns node
+        for k in givenAllLargerKeysThanSutKey() {
+            XCTAssertNotNil(sut.floor(k))
+            XCTAssertTrue(sut.floor(sut.key) === sut, "should have returned sut instance")
+        }
+    }
+    
+    func testFloorWhenEitherOrBothChildrenAreNotNil() {
+        whenBalancedTreeWithHalfGivenKeys()
+        let leftTree = sut.left!
+        let rightTree = sut.right!
+        
+        // node.left is nil, node.right is not nil
+        sut.left = nil
+        
+        // k == node.key, then returns node
+        XCTAssertNotNil(sut.floor(sut.key))
+        XCTAssertTrue(sut.floor(sut.key) === sut, "should have returned sut instance")
+        // k < node.key, then returns nil
+        for k in givenAllSmallerKeysThanSutKey() {
+            XCTAssertNil(sut.floor(k))
+        }
+        // k > node.key, then returns either right.floor(k) or sut
+        // if right.floor(k) was nil
+        for k in givenAllLargerKeysThanSutKey() {
+            let f = sut.floor(k)
+            XCTAssertNotNil(f)
+            if let rightFloor = rightTree.floor(k) {
+                XCTAssertTrue(f === rightFloor, "should have returned sut.right.floor(k) returned node instance")
+            } else {
+                XCTAssertTrue(f === sut, "should have returned sut instance")
+            }
+        }
+        
+        // node.left is not nil, node.right is nil
+        sut.left = leftTree
+        sut.right = nil
+        
+        // k == node.key, then returns node
+        XCTAssertNotNil(sut.floor(sut.key))
+        XCTAssertTrue(sut.floor(sut.key) === sut, "should have returned sut instance")
+        // k < node.key, then returns node.left.floor(k) result
+        for k in givenAllSmallerKeysThanSutKey() {
+            let f = sut.floor(k)
+            if let leftFloor = leftTree.floor(k) {
+                XCTAssertNotNil(f)
+                XCTAssertTrue(f === leftFloor, "should have returned sut.left.floor(k) returned node instance")
+            } else {
+                XCTAssertNil(f)
+            }
+        }
+        // k > node.key, then returns node
+        for k in givenAllLargerKeysThanSutKey() {
+            let f = sut.floor(k)
+            XCTAssertNotNil(f)
+            XCTAssertTrue(f === sut, "should have returned sut instance")
+        }
+        
+        // both node.left and node.right are not nil
+        sut.right = rightTree
+        
+        // k == node.key, then returns node
+        XCTAssertNotNil(sut.floor(sut.key))
+        XCTAssertTrue(sut.floor(sut.key) === sut, "should have returned sut instance")
+        // k < node.key, then returns node.left.floor(k) result
+        for k in givenAllSmallerKeysThanSutKey() {
+            let f = sut.floor(k)
+            if let leftFloor = leftTree.floor(k) {
+                XCTAssertNotNil(f)
+                XCTAssertTrue(f === leftFloor, "should have returned sut.left.floor(k) returned node instance")
+            } else {
+                XCTAssertNil(f)
+            }
+        }
+        // k > node.key, then returns either right.floor(k) or sut
+        // if right.floor(k) was nil
+        for k in givenAllLargerKeysThanSutKey() {
+            let f = sut.floor(k)
+            XCTAssertNotNil(f)
+            if let rightFloor = rightTree.floor(k) {
+                XCTAssertTrue(f === rightFloor, "should have returned sut.right.floor(k) returned node instance")
+            } else {
+                XCTAssertTrue(f === sut, "should have returned sut instance")
+            }
+        }
+    }
+    
+    // MARK: - ceiling(_:) tests
+    func testCeiling_whenBothChildrenAreNil() {
+        XCTAssertNil(sut.left)
+        XCTAssertNil(sut.right)
+        // k == node.key, then returns node
+        XCTAssertNotNil(sut.ceiling(sut.key))
+        XCTAssertTrue(sut.ceiling(sut.key) === sut, "should have returned sut instance")
+        // k > node.key, then returns nil
+        for k in givenAllLargerKeysThanSutKey() {
+            XCTAssertNil(sut.ceiling(k))
+        }
+        // k < node.key, then returns node
+        for k in givenAllSmallerKeysThanSutKey() {
+            XCTAssertNotNil(sut.ceiling(k))
+            XCTAssertTrue(sut.ceiling(sut.key) === sut, "should have returned sut instance")
+        }
+    }
+    
+    func testCeilingWhenEitherOrBothChildrenAreNotNil() {
+        whenBalancedTreeWithHalfGivenKeys()
+        let leftTree = sut.left!
+        let rightTree = sut.right!
+        
+        // node.left is not nil, node.right is nil
+        sut.right = nil
+        
+        // k == node.key, then returns node
+        XCTAssertNotNil(sut.ceiling(sut.key))
+        XCTAssertTrue(sut.ceiling(sut.key) === sut, "should have returned sut instance")
+        // k > node.key, then returns nil
+        for k in givenAllLargerKeysThanSutKey() {
+            XCTAssertNil(sut.ceiling(k))
+        }
+        // k < node.key, then returns either left.ceiling(k)
+        // or sut if left.ceiling(k) was nil
+        for k in givenAllSmallerKeysThanSutKey() {
+            let c = sut.ceiling(k)
+            XCTAssertNotNil(c)
+            if let leftCeiling = leftTree.ceiling(k) {
+                XCTAssertTrue(c === leftCeiling, "should have returned sut.left.ceiling(k) returned node instance")
+            } else {
+                XCTAssertTrue(c === sut, "should have returned sut instance")
+            }
+        }
+        
+        // node.left is nil, node.right not is nil
+        sut.left = nil
+        sut.right = rightTree
+        
+        // k == node.key, then returns node
+        XCTAssertNotNil(sut.ceiling(sut.key))
+        XCTAssertTrue(sut.ceiling(sut.key) === sut, "should have returned sut instance")
+        // k > node.key, then returns
+        // node.right.ceiling(k) result
+        for k in givenAllLargerKeysThanSutKey() {
+            let c = sut.ceiling(k)
+            if let rightCeiling = rightTree.ceiling(k) {
+                XCTAssertNotNil(c)
+                XCTAssertTrue(c === rightCeiling, "should have returned sut.left.floor(k) returned node instance")
+            } else {
+                XCTAssertNil(c)
+            }
+        }
+        // k < node.key, then returns node
+        for k in givenAllSmallerKeysThanSutKey() {
+            let c = sut.ceiling(k)
+            XCTAssertNotNil(c)
+            XCTAssertTrue(c === sut, "should have returned sut instance")
+        }
+        
+        // both node.left and node.right are not nil
+        sut.left = leftTree
+        
+        // k == node.key, then returns node
+        XCTAssertNotNil(sut.ceiling(sut.key))
+        XCTAssertTrue(sut.ceiling(sut.key) === sut, "should have returned sut instance")
+        // k > node.key, then returns
+        // node.right.ceiling(k) result
+        for k in givenAllLargerKeysThanSutKey() {
+            let c = sut.ceiling(k)
+            if let rightCeiling = rightTree.ceiling(k) {
+                XCTAssertNotNil(c)
+                XCTAssertTrue(c === rightCeiling, "should have returned sut.left.floor(k) returned node instance")
+            } else {
+                XCTAssertNil(c)
+            }
+        }
+        // k < node.key, then returns either left.ceiling(k)
+        // or sut if left.ceiling(k) was nil
+        for k in givenAllSmallerKeysThanSutKey() {
+            let c = sut.ceiling(k)
+            XCTAssertNotNil(c)
+            if let leftCeiling = leftTree.ceiling(k) {
+                XCTAssertTrue(c === leftCeiling, "should have returned sut.left.ceiling(k) returned node instance")
+            } else {
+                XCTAssertTrue(c === sut, "should have returned sut instance")
+            }
+        }
+    }
+    
+    // MARK: - selection(rank:) tests
+    func testSelectionRank_whenBothChildrenAreNil() {
+        XCTAssertNil(sut.left)
+        XCTAssertNil(sut.right)
+        
+        // only available rank value is 0 in these circumstances,
+        // therefore: and when rank is 0, then returns node:
+        XCTAssertTrue(sut.selection(rank: 0) === sut, "should hacve returned sut instance")
+    }
+    
+    func testSelectionRank_whenEitherOrBothChildrenAreNotNil() {
+        whenBalancedTreeWithHalfGivenKeys()
+        let leftTree = sut.left!
+        let rightTree = sut.right!
+        
+        // left is nil, right is not nil
+        sut.left = nil
+        sut.updateCount()
+        
+        // when rank is equal to 0, returns node
+        XCTAssertTrue(sut.selection(rank: 0) === sut, "should have returned sut instance")
+        // when rank is greater than zero,
+        // then returns node.right.selection(rank - 1) result
+        for rank in 1..<sut.count {
+            let rightSelection = rightTree.selection(rank: rank - 1)
+            XCTAssertTrue(sut.selection(rank: rank) === rightSelection, "should have returned instance from sut.right.selection(rank: rank - 1)")
+        }
+        
+        // left is not nil, right is nil
+        sut.left = leftTree
+        sut.right = nil
+        sut.updateCount()
+        
+        // when rank is less than left.count,
+        // then returns left.selection(rank: rank) result
+        for rank in 0..<leftTree.count {
+            XCTAssertTrue(sut.selection(rank: rank) === leftTree.selection(rank: rank), "should have returned sut.left.selection(rank: rank) result")
+        }
+        
+        // when rank is equal to left.count,
+        // then returns node
+        XCTAssertTrue(sut.selection(rank: leftTree.count) === sut, "should have returned sut instance")
+        
+        // both left and right are not nil
+        sut.right = rightTree
+        sut.updateCount()
+        
+        // when rank is less than left.count,
+        // then returns result of left.selection(rank: rank);
+        // when rank is equal to left.count, then returns node;
+        // when rank is greater than left.count,
+        // then returns result from right.selection(rank: rank - left.count - 1)
+        for rank in 0..<sut.count {
+            let result = sut.selection(rank: rank)
+            if rank < leftTree.count {
+                XCTAssertTrue(result === leftTree.selection(rank: rank), "should have returned result from sut.left.selection(rank: rank)")
+            } else if rank == leftTree.count {
+                XCTAssertTrue(result === sut, "should have returned sut instance")
+            } else {
+                XCTAssertTrue(result === rightTree.selection(rank: rank - leftTree.count - 1), "should have returned result from sut.right.selection(rank: rank - sut.left.count - 1)")
+            }
+            for (i, expectedResult) in sut.enumerated() where i == rank {
+                // element is i-th enumerated where i == rank
+                XCTAssertEqual(result.key, expectedResult.0)
+                XCTAssertEqual(result.value, expectedResult.1)
+            }
+        }
+    }
+    
     // MARK: - Functional Programming methods tests
     // MARK: - mapValues(_:) tests
     func testMapValues_whenTransformThrows() {
@@ -732,7 +1067,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertFalse(sut.right!.hasRedLeftChild)
         
         let clone = sut.copy() as! LLRBTree<String, Int>.Node
-            
+        
         sut.moveRedLeft()
         XCTAssertEqual(sut.color, .black)
         XCTAssertEqual(sut.left!.color, .red)
@@ -802,7 +1137,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertEqual(sut.right?.left, clone.right!.left!)
         XCTAssertEqual(sut.right?.right, clone.right!.right!)
     }
-        
+    
     
     func testMoveRedRight_whenLeftLeftIsRed() {
         whenShouldMoveRedRight_LeftGrandChildIsRed()

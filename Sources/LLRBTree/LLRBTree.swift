@@ -291,6 +291,33 @@ extension LLRBTree {
     
 }
 
+// MARK: - rank(_:), floor(_:), ceiling(_:), selection(rank:) methods
+extension LLRBTree {
+    public func rank(_ key: Key) -> Int {
+        guard let root = root else { return 0 }
+        
+        return root.rank(key)
+    }
+    
+    public func floor(_ key: Key) -> Key? {
+        
+        return root?.floor(key)?.key
+    }
+    
+    public func ceiling(_ key: Key) -> Key? {
+        
+        return root?.ceiling(key)?.key
+    }
+    
+    public func selection(rank: Int) -> Element {
+        precondition(!isEmpty, "cannot use select(rank:) when isEmpty == true")
+        precondition(0..<count ~= rank, "rank is out of bounds")
+        
+        return root!.selection(rank: rank).element
+    }
+    
+}
+
 // MARK: - Sequence conformance
 extension LLRBTree: Sequence {
     public typealias Element = (Key, Value)

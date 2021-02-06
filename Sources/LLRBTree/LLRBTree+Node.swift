@@ -112,6 +112,53 @@ extension LLRBTree.Node {
     
 }
 
+// MARK: - rank(_:), floor(_:), ceiling(_:), selection(rank:)
+extension LLRBTree.Node {
+    func rank(_ k: Key) -> Int {
+        if k < key {
+            
+            return left?.rank(k) ?? 0
+        }
+        let lCount = left?.count ?? 0
+        if k == key {
+            
+            return lCount
+        }
+        let rRank = right?.rank(k) ?? 0
+        
+        return 1 + lCount + rRank
+    }
+    
+    func floor(_ k: Key) -> LLRBTree.Node? {
+        if k == key { return self }
+        if k < key { return left?.floor(k) }
+        
+        return right?.floor(k) ?? self
+    }
+    
+    func ceiling(_ k: Key) -> LLRBTree.Node? {
+        if k == key { return self }
+        if k > key { return right?.ceiling(k) }
+        
+        return left?.ceiling(k) ?? self
+    }
+    
+    func selection(rank: Int) -> LLRBTree.Node {
+        assert(0..<count ~= rank, "rank is out of bounds")
+        let leftCount = left?.count ?? 0
+        
+        if leftCount > rank {
+            
+            return left!.selection(rank: rank)
+        }
+        
+        if leftCount == rank { return self }
+        
+        return right!.selection(rank: rank - leftCount - 1)
+    }
+    
+}
+
 // MARK: - FP implementations
 extension LLRBTree.Node {
     func mapValues<T>(_ transform: (Value) throws -> T) rethrows -> LLRBTree<Key, T>.Node {

@@ -472,6 +472,116 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNil(sut.root, "root is not nil after all its elements have been removed")
     }
     
+    // MARK: - rank(_:), floor(_:), ceiling(_:), selection(rank:) methods tests
+    // MARK: - rank(_:) tests
+    func testRank() {
+        // when root is nil, then returns 0 for any key
+        XCTAssertNil(sut.root)
+        for key in givenKeys {
+            XCTAssertEqual(sut.rank(key), 0)
+        }
+        
+        // when root is not nil, and key is included,
+        // then returns value equals to i-th enumarated key where
+        // key == key
+        for key in sutIncludedKeys.shuffled() {
+            let result = sut.rank(key)
+            for (expectedResult, element) in sut.enumerated() where element.0 == key {
+                XCTAssertEqual(result, expectedResult)
+            }
+        }
+        
+        // when root is not nil, and key is not included,
+        // then returns insert position:
+        whenRootContainsHalfGivenElements()
+        let sutKeys = sut.map { $0.0 }
+        for key in sutNotIncludedKeys.shuffled() {
+            let expectedResult = sutKeys.firstIndex(where: {
+                $0 == key || ($0 > key)
+            }) ?? sut.count
+            let result = sut.rank(key)
+            XCTAssertEqual(result, expectedResult)
+            if key > sut.maxKey! {
+                XCTAssertEqual(result, sut.count)
+            }
+        }
+    }
+    
+    // MARK: - floor(_:) tests
+    func testFloor() {
+        // when root is nil, then returns nil
+        XCTAssertNil(sut.root)
+        for k in givenKeys {
+            XCTAssertNil(sut.floor(k))
+        }
+        
+        // when root is not nil…
+        whenRootContainsHalfGivenElements()
+        
+        // …and k is larger than or equal minKey,
+        // then returns largest included key smaller than k
+        let keysLargerThanOrEqualToSutMinKey = givenKeys
+            .filter { $0 >= sut.minKey! }
+        for k in keysLargerThanOrEqualToSutMinKey {
+            let result = sut.floor(k)
+            XCTAssertNotNil(result)
+            let expectedResult = sut!
+                .map { $0.0 }
+                .last(where: { $0 <= k} )
+            XCTAssertEqual(result, expectedResult, "k was: \(k)")
+        }
+        
+        // …and k is smaller than minKey, then returns nil
+        let keysSmallerThanSutMinKey = givenKeys
+            .filter { $0 < sut.minKey! }
+        for k in keysSmallerThanSutMinKey {
+            XCTAssertNil(sut.floor(k))
+        }
+    }
+    
+    // MARK: - ceiling(_:) tests
+    func testCeiling() {
+        // mark when root is nil, then returns nil
+        XCTAssertNil(sut.root)
+        for k in givenKeys {
+            XCTAssertNil(sut.ceiling(k))
+        }
+        
+        // when root is not nil…
+        whenRootContainsHalfGivenElements()
+        
+        // …and k is smaller than or equal maxKey,
+        // then returns smallest included key larger than k
+        let keysSmallerThanOrEqualToSutMaxKey = givenKeys.filter { $0 <= sut.maxKey! }
+        for k in keysSmallerThanOrEqualToSutMaxKey {
+            let result = sut.ceiling(k)
+            XCTAssertNotNil(result)
+            let expectedResult = sut!
+                .map { $0.0 }
+                .first(where: { $0 >= k })
+            XCTAssertEqual(result, expectedResult, "k was \(k)")
+        }
+        
+        // …and k is larger than maxKey, then returns nil
+        let keysLargerThanSutMaxKey = givenKeys.filter { $0 > sut.maxKey! }
+        for k in keysLargerThanSutMaxKey {
+            XCTAssertNil(sut.ceiling(k))
+        }
+    }
+    
+    // MARK: - select(rank:) tests
+    func testSelect() {
+        // returns i-th element of enumerated where i is equal to rank
+        whenRootContainsHalfGivenElements()
+        for rank in 0..<sut.count {
+            for (i, expectedResult) in sut.enumerated() where i == rank {
+                let result = sut.selection(rank: rank)
+                XCTAssertEqual(result.0, expectedResult.0)
+                XCTAssertEqual(result.1, expectedResult.1)
+            }
+        }
+    }
+    
     // MARK: - Sequence conformance tests
     func testUnderEstimatedCount() {
         // when root is nil returns 0
