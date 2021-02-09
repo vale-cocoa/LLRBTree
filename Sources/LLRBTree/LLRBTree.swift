@@ -3,7 +3,7 @@
 //  LLRBTree
 //  
 //  Created by Valeriano Della Longa on 2021/01/26.
-//  Copyright © 2020 Valeriano Della Longa
+//  Copyright © 2021 Valeriano Della Longa
 //
 //  Permission is hereby granted, free of charge, to any person
 //  obtaining a copy of this software and associated documentation
@@ -31,7 +31,11 @@ import Foundation
 /// A valiue semantics data structure generic over `Key` and  `Value` types,
 /// storing its elements in a prefectly balanced binary search tree.
 public struct LLRBTree<Key: Comparable, Value> {
+    final class ID {  }
+    
     var root: Node? = nil
+    
+    var id: ID = ID()
     
     /// Instantiates and returns a new empty tree.
     ///
@@ -254,6 +258,7 @@ extension LLRBTree {
             root = LLRBTree.Node(key: key, value: value)
         }
         root!.color = .black
+        id = ID()
     }
     
     /// Removes the element with the given key from this tree.
@@ -265,6 +270,7 @@ extension LLRBTree {
         makeUnique()
         root = root?.removingValue(forKey: key)
         root?.color = .black
+        id = ID()
     }
     
     /// Removes the element with the smallest key from
@@ -276,6 +282,7 @@ extension LLRBTree {
         makeUnique()
         root = root?.removingValueForMinKey()
         root?.color = .black
+        id = ID()
     }
     
     /// Removes the element with the greatest key from
@@ -287,6 +294,7 @@ extension LLRBTree {
         makeUnique()
         root = root?.removingValueForMaxKey()
         root?.color = .black
+        id = ID()
     }
     
 }
@@ -613,6 +621,7 @@ extension LLRBTree {
         try root!
             .setValue(value, forKey: key, uniquingKeysWith: combine)
         root!.color = .black
+        id = ID()
     }
     
     /// Merges the key-value pairs in the given sequence into the tree, using a
@@ -664,6 +673,7 @@ extension LLRBTree {
             try root!.setValue(otherElement.1, forKey: otherElement.0, uniquingKeysWith: combine)
             root!.color = .black
         }
+        id = ID()
     }
     
     /// Creates a tree by merging key-value pairs in a sequence into the tree,

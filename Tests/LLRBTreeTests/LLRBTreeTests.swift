@@ -3,7 +3,7 @@
 //  LLRBTreeTests
 //
 //  Created by Valeriano Della Longa on 2021/01/30.
-//  Copyright © 2020 Valeriano Della Longa
+//  Copyright © 2021 Valeriano Della Longa
 //
 //  Permission is hereby granted, free of charge, to any person
 //  obtaining a copy of this software and associated documentation
@@ -1500,7 +1500,7 @@ final class LLRBTreeTests: XCTestCase {
         // red-black tree but holds same elements, then
         // are considered identical by Set.
         other.root = nil
-        sut.forEach { other.setValue($0.1, forKey: $0.0) }
+        sut.shuffled().forEach { other.setValue($0.1, forKey: $0.0) }
         XCTAssertNotEqual(sut.root, other.root)
         XCTAssertFalse(set.insert(other).inserted)
     }
