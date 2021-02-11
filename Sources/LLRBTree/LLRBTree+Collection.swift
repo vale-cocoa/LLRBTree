@@ -27,6 +27,7 @@
 //
 
 import Foundation
+import BinaryNode
 
 extension LLRBTree: BidirectionalCollection {
     public var startIndex: Index {
@@ -76,29 +77,26 @@ extension LLRBTree: BidirectionalCollection {
 
 extension LLRBTree {
     public struct Index {
-        struct _WrappedNode {
-            unowned(unsafe) let node: LLRBTree.Node
-        }
-        
         var id: ID
         
-        var root: _WrappedNode? = nil
+        var root: WrappedNode<LLRBTree.Node>? = nil
         
-        var path: [_WrappedNode] = []
+        var path: [WrappedNode<LLRBTree.Node>] = []
         
         init(asStartIndexOf tree: LLRBTree) {
             self.id = tree.id
             if tree.root != nil {
-                let wRoot = _WrappedNode(node: tree.root!)
+                let wRoot = WrappedNode(node: tree.root!)
                 self.root = wRoot
-                self.path = pathToMinOf(wRoot)
+                //self.path = pathToMinOf(wRoot)
+                self.path = [WrappedNode(node: tree.root!)] + tree.root!.pathToMin
             }
         }
         
         init(asEndIndexOf tree: LLRBTree) {
             self.id = tree.id
             if tree.root != nil {
-                self.root = _WrappedNode(node: tree.root!)
+                self.root = WrappedNode(node: tree.root!)
             }
         }
         
@@ -115,11 +113,10 @@ extension LLRBTree {
                 guard this.node !== last.node.left else { break }
                 
                 if
-                    last.node.right != nil,
-                    last.node.right !== this.node
+                    let r = last.wrappedRight,
+                    r.node !== this.node
                 {
-                    let r = _WrappedNode(node:last.node.right!)
-                    path.append(contentsOf: pathToMinOf(r))
+                    path.append(contentsOf: [r] + r.node.pathToMin)
                     
                     break
                 }
@@ -127,13 +124,12 @@ extension LLRBTree {
             }
         }
         
-        func pathToMinOf(_ wrappedNode: _WrappedNode) -> [_WrappedNode] {
+        func pathToMinOf(_ wrappedNode: WrappedNode<LLRBTree.Node>) -> [WrappedNode<LLRBTree.Node>] {
             var path = [wrappedNode]
             var current = wrappedNode
-            while current.node.left != nil {
-                let newElement = _WrappedNode(node: current.node.left!)
-                path.append(newElement)
-                current = newElement
+            while current.wrappedLeft != nil {
+                path.append(current.wrappedLeft!)
+                current = current.wrappedLeft!
             }
             
             return path
@@ -155,30 +151,28 @@ extension LLRBTree {
                 else { return }
                 
                 if
-                    last.node.left != nil,
-                    last.node.left !== this.node
+                    let l = last.wrappedLeft,
+                    l.node !== this.node
                 {
-                    let l = _WrappedNode(node: last.node.left!)
-                    path.append(contentsOf: pathToMaxOf(l))
+                    path.append(contentsOf: [l] + l.node.pathToMax)
                     
                     break
                 }
                 this = path.popLast()!
             }
             guard !path.isEmpty else {
-                path.append(contentsOf: pathToMinOf(root!))
+                path.append(contentsOf: [root!] + root!.node.pathToMin)
                 
                 return
             }
         }
         
-        func pathToMaxOf(_ wrappedNode: _WrappedNode) -> [_WrappedNode] {
+        func pathToMaxOf(_ wrappedNode: WrappedNode<LLRBTree.Node>) -> [WrappedNode<LLRBTree.Node>] {
             var path = [wrappedNode]
             var current = wrappedNode
-            while current.node.right != nil {
-                let newElement = _WrappedNode(node: current.node.right!)
-                path.append(newElement)
-                current = newElement
+            while current.wrappedRight != nil {
+                path.append(current.wrappedRight!)
+                current = current.wrappedRight!
             }
             
             return path

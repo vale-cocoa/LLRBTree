@@ -72,14 +72,14 @@ func assertLeftLeaningRedBlackTreeInvariants<Key: Comparable, Value>(root: LLRBT
         .reduce(false, { partialResult, path in
             partialResult == true ?
                 true :
-                path.contains(where: { node in
-                    node.hasRedRightChild || node.is4Node
+                path.contains(where: { wrappedNode in
+                    wrappedNode.node.hasRedRightChild || wrappedNode.node.is4Node
                 })
         })
     XCTAssertFalse(colorBalanceNotRespected, "\(root) either contains 4 node or has red node leaning right\n\(message ?? "")", file: file, line: line)
     
     let blackHeights = nodePaths
-        .map { $0.reduce(0, { $1.isRed ? $0 : $0 + 1}) }
+        .map { $0.reduce(0, { $1.node.isRed ? $0 : $0 + 1}) }
     let hasSameBlackHeight: Bool = blackHeights.max() == blackHeights.min()
     XCTAssertTrue(hasSameBlackHeight, "\(root) has not the same black height on every path\n\(message ?? "")", file: file, line: line)
 }

@@ -162,6 +162,9 @@ extension LLRBTree {
         guard let rootMin = root?.min else { return nil }
         
         return (rootMin.key, rootMin.value)
+        /*
+        root?.left?.pathToMin.last?.node.element ?? root?.left?.element ?? root?.element
+        */
     }
     
     /// The element with the greatest key stored in this tree; `nil` when
@@ -169,9 +172,12 @@ extension LLRBTree {
     ///
     /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
     public var max: Element? {
+        /*
         guard let rootMax = root?.max else { return nil }
         
         return (rootMax.key, rootMax.value)
+        */
+        root?.right?.pathToMax.last?.node.element ?? root?.right?.element ?? root?.element
     }
     /// The smallest key stored in this tree; `nil` when
     /// `isEmpty` is `true`.
@@ -459,7 +465,7 @@ extension LLRBTree {
         precondition(!isEmpty, "cannot use select(rank:) when isEmpty == true")
         precondition(0..<count ~= position, "rank is out of bounds")
         
-        return root!.selection(rank: position).element
+        return root!.select(rank: position).element
     }
     
 }

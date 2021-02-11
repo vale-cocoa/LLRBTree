@@ -43,6 +43,10 @@ extension LLRBTree {
         
         var right: Node? = nil
         
+        var pathToMin: [WrappedNode<LLRBTree.Node>] = []
+        
+        var pathToMax: [WrappedNode<LLRBTree.Node>] = []
+        
         init(key: Key, value: Value, color: Color = .red) {
             self.key = key
             self.value = value
@@ -53,12 +57,24 @@ extension LLRBTree {
             let kClone: Key = ((key as? NSCopying)?.copy(with: zone) as? Key) ?? key
             let vClone: Value = ((value as? NSCopying)?.copy(with: zone) as? Value) ?? value
             let clone = LLRBTree.Node(key: kClone, value: vClone, color: color)
+            
             clone.count = count
+            
             clone.left = left?.copy(with: zone) as? LLRBTree.Node
+            clone.left?.updatePaths()
+            
             clone.right = right?.copy(with: zone) as? LLRBTree.Node
+            clone.right?.updatePaths()
+            
+            clone.updatePaths()
             
             return clone
         }
+        
+        func clone() -> LLRBTree<Key, Value>.Node {
+            self.copy() as! LLRBTree<Key, Value>.Node
+        }
+        
     }
     
 }
@@ -84,10 +100,10 @@ extension LLRBTree.Node {
 // MARK: - Computed properties
 extension LLRBTree.Node {
     @inlinable
-    var min: LLRBTree.Node { left?.min ?? self }
+    var min: LLRBTree.Node { left?.pathToMin.last?.node ?? left ?? self }
     
     @inlinable
-    var max: LLRBTree.Node { right?.max ?? self }
+    var max: LLRBTree.Node { right?.pathToMax.last?.node ?? right ?? self }
     
     @inlinable
     var minKey: Key { min.key }
@@ -112,7 +128,7 @@ extension LLRBTree.Node {
     
 }
 
-// MARK: - rank(_:), floor(_:), ceiling(_:), selection(rank:)
+// MARK: - rank(_:), floor(_:), ceiling(_:), select(rank:)
 extension LLRBTree.Node {
     func rank(_ k: Key) -> Int {
         if k < key {
@@ -143,18 +159,18 @@ extension LLRBTree.Node {
         return left?.ceiling(k) ?? self
     }
     
-    func selection(rank: Int) -> LLRBTree.Node {
+    func select(rank: Int) -> LLRBTree.Node {
         assert(0..<count ~= rank, "rank is out of bounds")
         let leftCount = left?.count ?? 0
         
         if leftCount > rank {
             
-            return left!.selection(rank: rank)
+            return left!.select(rank: rank)
         }
         
         if leftCount == rank { return self }
         
-        return right!.selection(rank: rank - leftCount - 1)
+        return right!.select(rank: rank - leftCount - 1)
     }
     
 }
@@ -178,6 +194,28 @@ extension LLRBTree.Node: Sequence {
     typealias Element = (Key, Value)
     
     var underestimatedCount: Int { return count }
+    
+    public func makeIterator() -> AnyIterator<Element> {
+        var stack = [WrappedNode<LLRBTree.Node>]()
+        var node: WrappedNode<LLRBTree.Node>? = WrappedNode(node: self)
+        
+        return AnyIterator {
+            if let n = node {
+                stack.append(n)
+                stack.append(contentsOf: n.node.pathToMin)
+            }
+            guard
+                let current = stack.popLast()
+            else { return nil }
+            
+            defer {
+                node = current.node.right != nil ? WrappedNode(node: current.node.right!) : nil
+            }
+            
+            return current.node.element
+        }
+    }
+    
 }
 
 // MARK: - Equatable conformance
@@ -185,11 +223,23 @@ extension LLRBTree.Node: Equatable where Value: Equatable {
     static func == (lhs: LLRBTree.Node, rhs: LLRBTree.Node) -> Bool {
         guard lhs !== rhs else { return true }
         
+        let nodeBaseCmp: (LLRBTree<Key, Value>.Node, LLRBTree<Key, Value>.Node) -> Bool = {
+            $0.color == $1.color &&
+                $0.count == $1.count &&
+                $0.key == $1.key &&
+                $0.value == $1.value
+        }
+            
+        let pathNodeCmp: (WrappedNode, WrappedNode) -> Bool = {
+            nodeBaseCmp($0.node, $1.node) == true
+        }
+        
         guard
-            lhs.color == rhs.color,
-            lhs.count == rhs.count,
-            lhs.key == rhs.key,
-            lhs.value == rhs.value
+            nodeBaseCmp(lhs, rhs) == true,
+            lhs.pathToMin.count == rhs.pathToMin.count,
+            lhs.pathToMax.count == rhs.pathToMax.count,
+            lhs.pathToMin.elementsEqual(rhs.pathToMin, by: pathNodeCmp),
+            lhs.pathToMax.elementsEqual(rhs.pathToMax, by: pathNodeCmp)
         else { return false }
         
         switch (lhs.left, rhs.left) {
@@ -224,9 +274,13 @@ extension LLRBTree.Node {
         newLeft.left = l
         newLeft.right = r.left
         newLeft.updateCount()
+        newLeft.updatePaths()
         
         left = newLeft
         right = r.right
+        
+        right?.updatePaths()
+        updatePaths()
     }
     
     @inlinable
@@ -242,9 +296,13 @@ extension LLRBTree.Node {
         newRight.left = l.right
         newRight.right = r
         newRight.updateCount()
+        newRight.updatePaths()
         
         left = l.left
         right = newRight
+        
+        left?.updatePaths()
+        updatePaths()
     }
     
     @inlinable
@@ -279,6 +337,7 @@ extension LLRBTree.Node {
         }
         
         updateCount()
+        updatePaths()
     }
     
     @inlinable
@@ -293,6 +352,22 @@ extension LLRBTree.Node {
         count = 1 + (left?.count ?? 0) + (right?.count ?? 0)
     }
     
+    @inlinable
+    func updatePaths() {
+        updatePathToMin()
+        updatePathToMax()
+    }
+    
+    @inlinable
+    func updatePathToMin() {
+        pathToMin = left != nil ? [WrappedNode(node: left!)] + left!.pathToMin : []
+    }
+    
+    @inlinable
+    func updatePathToMax() {
+        pathToMax = right != nil ? [WrappedNode(node: right!)] + right!.pathToMax : []
+    }
+    
 }
 
 // MARK: - C.R.U.D.
@@ -304,14 +379,14 @@ extension LLRBTree.Node {
     
     func setValue(_ v: Value, forKey k: Key) {
         if k < key {
-            if let l = left {
-                l.setValue(v, forKey: k)
+            if left != nil {
+                left!.setValue(v, forKey: k)
             } else {
                 left = LLRBTree.Node(key: k, value: v)
             }
         } else if k > key {
-            if let r = right {
-                r.setValue(v, forKey: k)
+            if right != nil {
+                right!.setValue(v, forKey: k)
             } else {
                 right = LLRBTree.Node(key: k, value: v)
             }
@@ -324,14 +399,14 @@ extension LLRBTree.Node {
     
     func setValue(_ v: Value, forKey k: Key, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
         if k < key {
-            if let l = left {
-                try l.setValue(v, forKey: k, uniquingKeysWith: combine)
+            if left != nil {
+                try left!.setValue(v, forKey: k, uniquingKeysWith: combine)
             } else {
                 left = LLRBTree.Node(key: k, value: v)
             }
         } else if k > key {
-            if let r = right {
-                try r.setValue(v, forKey: k, uniquingKeysWith: combine)
+            if right != nil {
+                try right!.setValue(v, forKey: k, uniquingKeysWith: combine)
             } else {
                 right = LLRBTree.Node(key: k, value: v)
             }
@@ -359,9 +434,9 @@ extension LLRBTree.Node {
                 moveRedRight()
             }
             if k == key {
-                let rightMin = right!.min
-                key = rightMin.key
-                value = rightMin.value
+                let rightMinElement = right!.min.element
+                key = rightMinElement.0
+                value = rightMinElement.1
                 right = right!.removingValueForMinKey()
             } else {
                 right = right?.removingValue(forKey: k)

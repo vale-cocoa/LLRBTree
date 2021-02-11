@@ -70,14 +70,17 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue(), color: .black)
         sut.left!.right = LLRBTree.Node(key: smallerKeys[2], value: givenRandomValue(), color: .black)
         sut.left!.updateCount()
+        sut.left!.updatePaths()
         
         let largerKeys = givenAllLargerKeysThanSutKey().prefix(3)
         sut.right = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue(), color: .black)
         sut.right!.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.updateCount()
+        sut.right!.updatePaths()
         
         sut.updateCount()
+        sut.updatePaths()
     }
     
     func whenShouldRotateLeft() {
@@ -89,13 +92,16 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.left = LLRBTree.Node(key: leftTreeKeys[0], value: givenRandomValue(), color: .black)
         sut.left!.right = LLRBTree.Node(key: leftTreeKeys[2], value: givenRandomValue(), color: .black)
         sut.left!.updateCount()
+        sut.left!.updatePaths()
         
         sut.right = LLRBTree.Node(key: rightTreeKeys[1], value: givenRandomValue())
         sut.right!.left = LLRBTree.Node(key: rightTreeKeys[0], value: givenRandomValue(), color: .black)
         sut.right!.right = LLRBTree.Node(key: rightTreeKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.updateCount()
+        sut.right!.updatePaths()
         
         sut.updateCount()
+        sut.updatePaths()
     }
     
     func whenHasRedLeftChildAndHasRedLeftGrandChild() {
@@ -106,14 +112,18 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.right = LLRBTree.Node(key: smallerKeys[3], value: givenRandomValue(), color: .black)
         sut.left!.left!.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue(), color: .black)
         sut.left!.left!.updateCount()
+        sut.left!.left!.updatePaths()
         sut.left!.updateCount()
+        sut.left!.updatePaths()
         
         let largerKeys = givenAllLargerKeysThanSutKey().prefix(2)
         sut.right = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue())
         sut.right!.updateCount()
+        sut.right!.updatePaths()
         
         sut.updateCount()
+        sut.updatePaths()
     }
     
     func whenShouldRotateLeftThenRightAndThenFlipColorsToBalance() {
@@ -140,15 +150,21 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.right = LLRBTree.Node(key: smallKeys[3], value: givenRandomValue(), color: .black)
         sut.left!.left!.left = LLRBTree.Node(key: smallKeys[0], value: givenRandomValue(), color: .red)
         sut.left!.left!.updateCount()
+        sut.left!.left!.updatePaths()
         sut.left!.updateCount()
+        sut.left!.updatePaths()
         
         sut.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[01], value: givenRandomValue(), color: .black)
         sut.right!.left!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue(), color: .red)
         sut.right!.right = LLRBTree.Node(key: largerKeys[3], value: givenRandomValue(), color: .black)
         sut.right!.left!.updateCount()
+        sut.right!.left!.updatePaths()
         sut.right!.updateCount()
+        sut.right!.updatePaths()
+        
         sut.updateCount()
+        sut.updatePaths()
     }
     
     func whenShouldMoveRedLeft_RightLeftIsRed() {
@@ -176,16 +192,21 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.left!.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue())
         sut.left!.right = LLRBTree.Node(key: smallerKeys[3], value: givenRandomValue(), color: .black)
         sut.left!.left!.updateCount()
+        sut.left!.left!.updatePaths()
         sut.left!.updateCount()
+        sut.left!.updatePaths()
         
         sut.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         sut.right!.left!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue(), color: .red)
         sut.right!.right = LLRBTree.Node(key: largerKeys[3], value: givenRandomValue(), color: .black)
         sut.right!.left!.updateCount()
+        sut.right!.left!.updatePaths()
         sut.right!.updateCount()
+        sut.right!.updatePaths()
         
         sut.updateCount()
+        sut.updatePaths()
     }
     
     func whenShouldMoveRedRight_LeftGrandChildIsRed() {
@@ -201,16 +222,21 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.left!.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue(), color: .black)
         sut.left!.right = LLRBTree.Node(key: smallerKeys[3], value: givenRandomValue(), color: .black)
         sut.left!.left!.updateCount()
+        sut.left!.left!.updatePaths()
         sut.left!.updateCount()
+        sut.left!.updatePaths()
         
         sut.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         sut.right!.left!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue(), color: .red)
         sut.right!.right = LLRBTree.Node(key: largerKeys[3], value: givenRandomValue(), color: .black)
         sut.right!.left!.updateCount()
+        sut.right!.left!.updatePaths()
         sut.right!.updateCount()
+        sut.right!.updatePaths()
         
         sut.updateCount()
+        sut.updatePaths()
     }
     
     func whenBalancedTreeWithAllGivenKeys() {
@@ -447,9 +473,11 @@ final class LLRBTreeNodeTests: XCTestCase {
         let leftTree = LLRBTree.Node(key: smallerKeys[1], value: givenRandomValue(), color: .red)
         leftTree.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue(), color: .black)
         leftTree.right = LLRBTree.Node(key: smallerKeys[2], value: givenRandomValue(), color: .black)
+        leftTree.updatePaths()
         
         let expectedResult = leftTree.min
         sut.left = leftTree
+        sut.updatePaths()
         
         XCTAssertEqual(sut.min, expectedResult)
         XCTAssertEqual(sut.minKey, expectedResult.key)
@@ -479,10 +507,12 @@ final class LLRBTreeNodeTests: XCTestCase {
         let rightTree = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         rightTree.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue())
         rightTree.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
+        rightTree.updatePaths()
         
         let expectedResult = rightTree.max
         
         sut.right = rightTree
+        sut.updatePaths()
         XCTAssertEqual(sut.max, expectedResult)
         XCTAssertEqual(sut.maxKey, expectedResult.key)
         XCTAssertGreaterThan(sut.maxKey, sut.key)
@@ -843,17 +873,17 @@ final class LLRBTreeNodeTests: XCTestCase {
         }
     }
     
-    // MARK: - selection(rank:) tests
-    func testSelectionRank_whenBothChildrenAreNil() {
+    // MARK: - select(rank:) tests
+    func testSelectRank_whenBothChildrenAreNil() {
         XCTAssertNil(sut.left)
         XCTAssertNil(sut.right)
         
         // only available rank value is 0 in these circumstances,
         // therefore: and when rank is 0, then returns node:
-        XCTAssertTrue(sut.selection(rank: 0) === sut, "should hacve returned sut instance")
+        XCTAssertTrue(sut.select(rank: 0) === sut, "should hacve returned sut instance")
     }
     
-    func testSelectionRank_whenEitherOrBothChildrenAreNotNil() {
+    func testSelectRank_whenEitherOrBothChildrenAreNotNil() {
         whenBalancedTreeWithHalfGivenKeys()
         let leftTree = sut.left!
         let rightTree = sut.right!
@@ -863,12 +893,12 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.updateCount()
         
         // when rank is equal to 0, returns node
-        XCTAssertTrue(sut.selection(rank: 0) === sut, "should have returned sut instance")
+        XCTAssertTrue(sut.select(rank: 0) === sut, "should have returned sut instance")
         // when rank is greater than zero,
-        // then returns node.right.selection(rank - 1) result
+        // then returns node.right.select(rank - 1) result
         for rank in 1..<sut.count {
-            let rightSelection = rightTree.selection(rank: rank - 1)
-            XCTAssertTrue(sut.selection(rank: rank) === rightSelection, "should have returned instance from sut.right.selection(rank: rank - 1)")
+            let rightSelection = rightTree.select(rank: rank - 1)
+            XCTAssertTrue(sut.select(rank: rank) === rightSelection, "should have returned instance from sut.right.select(rank: rank - 1)")
         }
         
         // left is not nil, right is nil
@@ -877,32 +907,32 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.updateCount()
         
         // when rank is less than left.count,
-        // then returns left.selection(rank: rank) result
+        // then returns left.select(rank: rank) result
         for rank in 0..<leftTree.count {
-            XCTAssertTrue(sut.selection(rank: rank) === leftTree.selection(rank: rank), "should have returned sut.left.selection(rank: rank) result")
+            XCTAssertTrue(sut.select(rank: rank) === leftTree.select(rank: rank), "should have returned sut.left.select(rank: rank) result")
         }
         
         // when rank is equal to left.count,
         // then returns node
-        XCTAssertTrue(sut.selection(rank: leftTree.count) === sut, "should have returned sut instance")
+        XCTAssertTrue(sut.select(rank: leftTree.count) === sut, "should have returned sut instance")
         
         // both left and right are not nil
         sut.right = rightTree
         sut.updateCount()
         
         // when rank is less than left.count,
-        // then returns result of left.selection(rank: rank);
+        // then returns result of left.select(rank: rank);
         // when rank is equal to left.count, then returns node;
         // when rank is greater than left.count,
-        // then returns result from right.selection(rank: rank - left.count - 1)
+        // then returns result from right.select(rank: rank - left.count - 1)
         for rank in 0..<sut.count {
-            let result = sut.selection(rank: rank)
+            let result = sut.select(rank: rank)
             if rank < leftTree.count {
-                XCTAssertTrue(result === leftTree.selection(rank: rank), "should have returned result from sut.left.selection(rank: rank)")
+                XCTAssertTrue(result === leftTree.select(rank: rank), "should have returned result from sut.left.select(rank: rank)")
             } else if rank == leftTree.count {
                 XCTAssertTrue(result === sut, "should have returned sut instance")
             } else {
-                XCTAssertTrue(result === rightTree.selection(rank: rank - leftTree.count - 1), "should have returned result from sut.right.selection(rank: rank - sut.left.count - 1)")
+                XCTAssertTrue(result === rightTree.select(rank: rank - leftTree.count - 1), "should have returned result from sut.right.select(rank: rank - sut.left.count - 1)")
             }
             for (i, expectedResult) in sut.enumerated() where i == rank {
                 // element is i-th enumerated where i == rank
