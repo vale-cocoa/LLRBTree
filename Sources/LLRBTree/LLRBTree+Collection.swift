@@ -38,6 +38,10 @@ extension LLRBTree: BidirectionalCollection {
         Index(asEndIndexOf: self)
     }
     
+    public var first: Element? { min }
+    
+    public var last: Element? { max }
+    
     public subscript(position: Index) -> (Key, Value) {
         get {
             precondition(position.isValidFor(tree: self), "invalid index")
@@ -88,7 +92,6 @@ extension LLRBTree {
             if tree.root != nil {
                 let wRoot = WrappedNode(node: tree.root!)
                 self.root = wRoot
-                //self.path = pathToMinOf(wRoot)
                 self.path = [WrappedNode(node: tree.root!)] + tree.root!.pathToMin
             }
         }
@@ -105,77 +108,67 @@ extension LLRBTree {
         }
         
         mutating func formSuccessor() {
+            // index of empty tree, no successor to form.
             guard root != nil else { return }
             
+            // already endIndex, no successor to form
             guard var this = path.popLast() else { return }
             
-            while let last = path.last {
-                guard this.node !== last.node.left else { break }
+            // index has a right subtree,
+            // successor is its min
+            if let r = this.wrappedRight {
+                path.append(contentsOf: [this, r] + r.node.pathToMin)
                 
-                if
-                    let r = last.wrappedRight,
-                    r.node !== this.node
-                {
-                    path.append(contentsOf: [r] + r.node.pathToMin)
-                    
-                    break
-                }
+                return
+            }
+            
+            // We ought move back in the path to form
+            // successor
+            while let last = path.last {
+                // index was the left of previous node in path,
+                // we're done
+                guard
+                    this.node !== last.node.left
+                else { break }
+                
+                // get back in path
                 this = path.popLast()!
             }
         }
         
-        func pathToMinOf(_ wrappedNode: WrappedNode<LLRBTree.Node>) -> [WrappedNode<LLRBTree.Node>] {
-            var path = [wrappedNode]
-            var current = wrappedNode
-            while current.wrappedLeft != nil {
-                path.append(current.wrappedLeft!)
-                current = current.wrappedLeft!
-            }
-            
-            return path
-        }
-        
         mutating func formPredecessor() {
+            // index of empty tree, no predecessor to form.
             guard root != nil else { return }
             
+            // endIndex, predecessor is root's rightmost node
             guard !path.isEmpty else {
-                path = pathToMaxOf(root!)
+                path = [root!] + root!.node.pathToMax
                 
                 return
             }
             
             var this = path.popLast()!
-            while let last = path.popLast() {
-                guard
-                    this.node !== last.node.right
-                else { return }
-                
-                if
-                    let l = last.wrappedLeft,
-                    l.node !== this.node
-                {
-                    path.append(contentsOf: [l] + l.node.pathToMax)
-                    
-                    break
-                }
-                this = path.popLast()!
-            }
-            guard !path.isEmpty else {
-                path.append(contentsOf: [root!] + root!.node.pathToMin)
+            
+            // index has a left subtree,
+            // predecessor is its max
+            if let l = this.wrappedLeft {
+                path.append(contentsOf: [this, l] + l.node.pathToMax)
                 
                 return
             }
-        }
-        
-        func pathToMaxOf(_ wrappedNode: WrappedNode<LLRBTree.Node>) -> [WrappedNode<LLRBTree.Node>] {
-            var path = [wrappedNode]
-            var current = wrappedNode
-            while current.wrappedRight != nil {
-                path.append(current.wrappedRight!)
-                current = current.wrappedRight!
-            }
             
-            return path
+            // we ought move back in path to form
+            // predecessor
+            while let last = path.last {
+                // index was the right of previous node in
+                // path, we're done
+                guard
+                    this.node !== last.node.right
+                else { break }
+                
+                // get back in path
+                this = path.popLast()!
+            }
         }
         
     }
@@ -196,10 +189,10 @@ extension LLRBTree.Index: Comparable {
         precondition(areValid(lhs: lhs, rhs: rhs), "Cannot compare indices from two different tree instances.")
         switch (lhs.path.last?.node.key, rhs.path.last?.node.key) {
         case (nil, nil): return false
-        case (nil, _): return false
-        case (_, nil): return true
-        case (let lKey, let rKey):
-            return lKey! < rKey!
+        case (nil, .some(_)): return false
+        case (.some(_), nil): return true
+        case (.some(let lKey), .some(let rKey)):
+            return lKey < rKey
         }
     }
     

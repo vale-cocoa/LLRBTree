@@ -100,10 +100,10 @@ extension LLRBTree.Node {
 // MARK: - Computed properties
 extension LLRBTree.Node {
     @inlinable
-    var min: LLRBTree.Node { left?.pathToMin.last?.node ?? left ?? self }
+    var min: LLRBTree.Node { pathToMin.last?.node ?? self }
     
     @inlinable
-    var max: LLRBTree.Node { right?.pathToMax.last?.node ?? right ?? self }
+    var max: LLRBTree.Node { pathToMax.last?.node ?? self }
     
     @inlinable
     var minKey: Key { min.key }
@@ -181,8 +181,14 @@ extension LLRBTree.Node {
         let t = try transform(value)
         let result = LLRBTree<Key, T>.Node(key: key, value: t, color: isRed ? .red : .black)
         result.count = count
+        
         result.left = try left?.mapValues(transform)
+        result.left?.updatePaths()
+        
         result.right = try right?.mapValues(transform)
+        result.right?.updatePaths()
+        
+        result.updatePaths()
         
         return result
     }
@@ -223,7 +229,7 @@ extension LLRBTree.Node: Equatable where Value: Equatable {
     static func == (lhs: LLRBTree.Node, rhs: LLRBTree.Node) -> Bool {
         guard lhs !== rhs else { return true }
         
-        let nodeBaseCmp: (LLRBTree<Key, Value>.Node, LLRBTree<Key, Value>.Node) -> Bool = {
+        let nodeBaseCmp: (LLRBTree.Node, LLRBTree.Node) -> Bool = {
             $0.color == $1.color &&
                 $0.count == $1.count &&
                 $0.key == $1.key &&
@@ -236,8 +242,6 @@ extension LLRBTree.Node: Equatable where Value: Equatable {
         
         guard
             nodeBaseCmp(lhs, rhs) == true,
-            lhs.pathToMin.count == rhs.pathToMin.count,
-            lhs.pathToMax.count == rhs.pathToMax.count,
             lhs.pathToMin.elementsEqual(rhs.pathToMin, by: pathNodeCmp),
             lhs.pathToMax.elementsEqual(rhs.pathToMax, by: pathNodeCmp)
         else { return false }

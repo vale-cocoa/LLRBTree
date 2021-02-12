@@ -135,9 +135,7 @@ extension LLRBTree: ExpressibleByDictionaryLiteral {
     init(_ other: LLRBTree) {
         self.init()
         
-        if let rootClone = other.root?.copy() {
-            root = (rootClone as! LLRBTree<Key, Value>.Node)
-        }
+        root = other.root?.clone()
     }
     
 }
@@ -157,7 +155,7 @@ extension LLRBTree {
     /// The element with the smallest key stored in this tree; `nil` when
     /// `isEmpty` is `true`.
     ///
-    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
+    /// - Complexity: O(l1).
     public var min: Element? {
         guard let rootMin = root?.min else { return nil }
         
@@ -170,7 +168,7 @@ extension LLRBTree {
     /// The element with the greatest key stored in this tree; `nil` when
     /// `isEmpty` is `true`.
     ///
-    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
+    /// - Complexity:   O(1).
     public var max: Element? {
         /*
         guard let rootMax = root?.max else { return nil }
@@ -182,13 +180,13 @@ extension LLRBTree {
     /// The smallest key stored in this tree; `nil` when
     /// `isEmpty` is `true`.
     ///
-    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
+    /// - Complexity:   O(1).
     public var minKey: Key? { root?.minKey }
     
     /// The greatest key stored in this tree; `nil` when
     /// `isEmpty` is `true`.
     ///
-    /// - Complexity:   O(log *n*) where *n* is the lenght of this tree.
+    /// - Complexity:   O(1).
     public var maxKey: Key? { root?.maxKey }
 }
 
@@ -663,6 +661,7 @@ extension LLRBTree {
     ///                 final tree.
     ///                 Assuming `combine` closure has O(1) complexity.
     public mutating func merge<S: Sequence>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S.Iterator.Element == Element {
+        id = ID()
         var otherIterator = other.makeIterator()
         guard
             let otherRootElement = otherIterator.next()
@@ -679,7 +678,6 @@ extension LLRBTree {
             try root!.setValue(otherElement.1, forKey: otherElement.0, uniquingKeysWith: combine)
             root!.color = .black
         }
-        id = ID()
     }
     
     /// Creates a tree by merging key-value pairs in a sequence into the tree,
@@ -785,21 +783,13 @@ extension LLRBTree: Equatable where Value: Equatable {
         guard lhs.root !== rhs.root else { return true }
         
         switch (lhs.root, rhs.root) {
-        case (nil, nil): break
-        case (nil, _): return false
-        case (_, nil): return false
-        case (let lRoot, let rRoot):
-            for (lElement, rElement) in zip(lRoot!, rRoot!) {
-                guard
-                    lElement.0 == rElement.0,
-                    lElement.1 == rElement.1
-                else { return false }
-            }
+        case (nil, nil): return true
+        case (nil, .some(_)): return false
+        case (.some(_), nil): return false
+        case (.some(let lRoot), .some(let rRoot)):
             
-            break
+            return lRoot.elementsEqual(rRoot, by: { $0.0 == $1.0 && $0.1 == $1.1 })
         }
-        
-        return true
     }
     
 }
@@ -850,9 +840,10 @@ extension LLRBTree: Hashable where Key: Hashable, Value: Hashable {
     }
     
     public var hashValue: Int {
-            var hasher = Hasher()
-            self.hash(into: &hasher)
-            return hasher.finalize()
+        var hasher = Hasher()
+        self.hash(into: &hasher)
+            
+        return hasher.finalize()
     }
     
 }
@@ -861,7 +852,7 @@ extension LLRBTree: Hashable where Key: Hashable, Value: Hashable {
 extension LLRBTree {
     mutating func makeUnique() {
         if !isKnownUniquelyReferenced(&root) {
-            root = root?.copy() as? LLRBTree<Key, Value>.Node
+            root = root?.clone()
         }
     }
     

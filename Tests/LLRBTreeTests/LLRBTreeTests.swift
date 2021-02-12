@@ -142,8 +142,7 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNotNil(sut.root)
         let expectedElements = keysAndValues
             .sorted(by: { $0.0 < $1.0 })
-        XCTAssertEqual(sut.root?.map { $0.0 }, expectedElements.map { $0.0 })
-        XCTAssertEqual(sut.root?.map { $0.1 }, expectedElements.map { $0.1 })
+        assertEqualsByElements(lhs: sut, rhs: expectedElements, message: "elements are not equal")
     }
     
     func testInitUniquingKeysWith_whenCombineThrows() {
@@ -165,13 +164,9 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNotNil(sut.root)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("sut.root is not supposed to be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
-        for element in keysAndValues {
-            XCTAssertEqual(sut.value(forKey: element.0), element.1)
-        }
+        assertEqualsByElements(lhs: sut, rhs: keysAndValues, message: "elements are not equal")
         
         // keysAndValues contains duplicate keys,
         // then rethrows
@@ -202,13 +197,9 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNotNil(sut.root)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("sut.root is not supposed to be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
-        for element in keysAndValues {
-            XCTAssertEqual(sut.value(forKey: element.0), element.1)
-        }
+        assertEqualsByElements(lhs: sut, rhs: keysAndValues)
         
         // when keysAndValues contains duplicate keys,
         // then combine gets executed, and returns a non-empty
@@ -234,9 +225,7 @@ final class LLRBTreeTests: XCTestCase {
         }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("sut.root is not supposed to be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
     }
     
@@ -393,7 +382,7 @@ final class LLRBTreeTests: XCTestCase {
             XCTAssertTrue(sut.rootIsBlack, "root should be a black node")
             if sut.root != nil {
                 assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-                assertEachNodeCountIsCorrect(root: sut.root!)
+                assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
             }
         }
         XCTAssertNil(sut.root)
@@ -407,14 +396,11 @@ final class LLRBTreeTests: XCTestCase {
             let prevCount = sut.count
             sut[key] = nil
             XCTAssertEqual(sut.count, prevCount)
-            XCTAssertEqual(sut.root?.map { $0.0 }, expectedElements.map { $0.0 })
-            XCTAssertEqual(sut.root?.map { $0.1 }, expectedElements.map { $0.1 })
+            assertEqualsByElements(lhs: sut, rhs: expectedElements)
             XCTAssertTrue(sut.rootIsBlack, "root should be a black node")
             if sut.root != nil {
                 assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-                assertEachNodeCountIsCorrect(root: sut.root!)
-            } else {
-                XCTFail("root should not be nil")
+                assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
             }
         }
     }
@@ -626,8 +612,7 @@ final class LLRBTreeTests: XCTestCase {
             whenRootContainsHalfGivenElements()
             let expectedResult = sut.root!.reversed()
             let result = sut.reversed()
-            XCTAssertEqual(result.map { $0.0 }, expectedResult.map { $0.0 })
-            XCTAssertEqual(result.map { $0.1 }, expectedResult.map { $0.1 })
+            assertEqualsByElements(lhs: result, rhs: expectedResult)
         }
     }
     
@@ -919,9 +904,10 @@ final class LLRBTreeTests: XCTestCase {
         // when root is not nil, then returns a new instance
         // with all elements transformed on value according to
         // given transform
+        let expectedResult = sut.map { ($0.0, transformValue($0.1)) }
+        
         let result = sut.mapValues(transformValue)
-        XCTAssertEqual(result.map { $0.0 }, sut.map { $0.0 })
-        XCTAssertEqual(result.map { $0.1 }, sut.map { transformValue($0.1) })
+        assertEqualsByElements(lhs: result, rhs: expectedResult)
     }
     
     func testCompactMapValues_whenRootIsNil() {
@@ -977,8 +963,7 @@ final class LLRBTreeTests: XCTestCase {
                     
                     return ($0.0, t)
                 }
-            XCTAssertEqual(result.map { $0.0 }, expectedElements.map { $0.0 })
-            XCTAssertEqual(result.map { $0.1 }, expectedElements.map { $0.1 })
+            assertEqualsByElements(lhs: result, rhs: expectedElements)
         }
     }
     
@@ -995,9 +980,7 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertEqual(sut.count, 1)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("root was supposed not to be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
         
         // root is not nil, forKey is not in root,
@@ -1010,7 +993,7 @@ final class LLRBTreeTests: XCTestCase {
             XCTAssertEqual(sut.count, prevCount + 1)
             XCTAssertEqual(sut.value(forKey: k), newValue)
             assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-            assertEachNodeCountIsCorrect(root: sut.root!)
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
         }
         
         // root is not nil and forKey is in tree,
@@ -1040,9 +1023,7 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertEqual(sut.value(forKey: newKey), newValue)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("sut.root is not supposed to be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
         
         // root is not nil
@@ -1057,7 +1038,7 @@ final class LLRBTreeTests: XCTestCase {
             XCTAssertEqual(sut.count, prevCount + 1)
             XCTAssertEqual(sut.value(forKey: k), newValue)
             assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-            assertEachNodeCountIsCorrect(root: sut.root!)
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
         }
         
         // forKey is contained,
@@ -1074,7 +1055,7 @@ final class LLRBTreeTests: XCTestCase {
             XCTAssertTrue(executed)
             XCTAssertEqual(sut.value(forKey: k), expectedValue)
             assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-            assertEachNodeCountIsCorrect(root: sut.root!)
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
         }
     }
     
@@ -1096,13 +1077,10 @@ final class LLRBTreeTests: XCTestCase {
         givenKeys.forEach { other.setValue(givenRandomValue(), forKey: $0) }
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         XCTAssertNotNil(sut.root)
-        XCTAssertEqual(sut.map { $0.0 }, other.map { $0.0 })
-        XCTAssertEqual(sut.map { $0.1 }, other.map { $0.1 })
+        assertEqualsByElements(lhs: sut, rhs: other)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("sut.root should not be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
         
         // root is not nil and other is empty,
@@ -1110,8 +1088,7 @@ final class LLRBTreeTests: XCTestCase {
         other.root = nil
         let expectedElements = sut!.map { $0 }
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
-        XCTAssertEqual(sut.map { $0.0 }, expectedElements.map { $0.0 })
-        XCTAssertEqual(sut.map { $0.1 }, expectedElements.map { $0.1 })
+        assertEqualsByElements(lhs: sut, rhs: expectedElements)
         
         // root is not nil, other is not empty and doesn't contain
         // any duplicate key, then doesn't rethrow and elements
@@ -1132,9 +1109,7 @@ final class LLRBTreeTests: XCTestCase {
         }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("sut.root should not be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
         
         // root is not nil and other contains duplicate keys,
@@ -1167,13 +1142,10 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         XCTAssertFalse(executed)
         XCTAssertNotNil(sut.root)
-        XCTAssertEqual(sut.map { $0.0 }, other.map { $0.0 })
-        XCTAssertEqual(sut.map { $0.1 }, other.map { $0.1 })
+        assertEqualsByElements(lhs: sut, rhs: other)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("sut.root should not be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
         
         // root is not nil, other is not empty and doesn't contain
@@ -1198,9 +1170,7 @@ final class LLRBTreeTests: XCTestCase {
         }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("sut.root should not be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
         
         // root is not nil, other is not empty and contains
@@ -1230,9 +1200,7 @@ final class LLRBTreeTests: XCTestCase {
         expectedResultForDuplicateKeys.forEach { XCTAssertEqual(sut.value(forKey: $0.0), $0.1) }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("sut.root should not be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
     }
     
@@ -1276,9 +1244,7 @@ final class LLRBTreeTests: XCTestCase {
         expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.value(forKey: $0.0), $0.1) }
         if let root = result.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountIsCorrect(root: root)
-        } else {
-            XCTFail("result.root should not be nil")
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
         }
     }
     
@@ -1496,12 +1462,12 @@ final class LLRBTreeTests: XCTestCase {
         other.removeValueForMinKey()
         XCTAssertTrue(set.insert(other).inserted)
         
-        // when root is not nil, and other root is a different
-        // red-black tree but holds same elements, then
-        // are considered identical by Set.
+        // when root is not nil, and other root is not nil
+        // and have same elements, then
+        // are considered identical by Set
         other.root = nil
         sut.shuffled().forEach { other.setValue($0.1, forKey: $0.0) }
-        XCTAssertNotEqual(sut.root, other.root)
+        assertEqualsByElements(lhs: sut.root!, rhs: other.root!)
         XCTAssertFalse(set.insert(other).inserted)
     }
     

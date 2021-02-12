@@ -28,6 +28,7 @@
 
 import XCTest
 @testable import LLRBTree
+import BinaryNode
 
 // MARK: - Helpers for testing LLRBTree and its Node class:
 extension LLRBTree.Node {
@@ -57,8 +58,12 @@ func _transformNodeValue<Key: Comparable, Value, T>(_ node: LLRBTree<Key, Value>
     transformed.count = n.count
     
     transformed.left = _transformNodeValue(n.left, transformValue)
+    transformed.left?.updatePaths()
     
     transformed.right = _transformNodeValue(n.right, transformValue)
+    transformed.right?.updatePaths()
+    
+    transformed.updatePaths()
     
     return transformed
 }
@@ -84,20 +89,70 @@ func assertLeftLeaningRedBlackTreeInvariants<Key: Comparable, Value>(root: LLRBT
     XCTAssertTrue(hasSameBlackHeight, "\(root) has not the same black height on every path\n\(message ?? "")", file: file, line: line)
 }
 
-func assertEachNodeCountIsCorrect<Key: Comparable, Value>(root: LLRBTree<Key, Value>.Node, message: String? = nil, file: StaticString = #file, line: UInt = #line) {
-    func fullRecount(_ node: LLRBTree<Key, Value>.Node) -> Int {
+func assertEachNodeCountAndPathToMinAndMaxAreCorrect<Key: Comparable, Value>(root: LLRBTree<Key, Value>.Node, message: String? = nil, file: StaticString = #file, line: UInt = #line) {
+    typealias N = LLRBTree<Key, Value>.Node
+    typealias WN = WrappedNode<N>
+    
+    func realPath(_ node: N, toMin: Bool = true) -> [WN] {
+        var result = [WN]()
+        var current = toMin ? node.left : node.right
+        while current != nil {
+            result.append(WrappedNode(node: current!))
+            current = toMin ? current!.left : current!.right
+        }
+        
+        
+        return result
+    }
+    
+    func fullRecount(_ node: N) -> Int {
         let lC = node.left == nil ? 0 : fullRecount(node.left!)
         let rC = node.right == nil ? 0 : fullRecount(node.right!)
         
         return 1 + lC + rC
     }
     
-    var recounts = [(stored: Int, recounted: Int)]()
-    root.inOrderTraverse { recounts.append(($0.count, fullRecount($0))) }
-    for recount in recounts where recount.stored != recount.recounted {
-        XCTFail("\(root) has not updated count on every node\n\(message ?? "")", file: file, line: line)
-        break
+    root.inOrderTraverse { node in
+        let realCount = fullRecount(node)
+        XCTAssertEqual(node.count, realCount, "\(root) has not updated count on every node\n\(message ?? "")", file: file, line: line)
+        
+        let realPathToMin = realPath(node)
+        XCTAssertTrue(realPathToMin.elementsEqual(node.pathToMin, by: { $0.node === $1.node }), "\(root) has not updated pathToMin on every node\n\(message ?? "")", file: file, line: line)
+        
+        let realPathToMax = realPath(node, toMin: false)
+        XCTAssertTrue(realPathToMax.elementsEqual(node.pathToMax, by: { $0.node === $1.node }), "\(root) has not updated pathToMax on every node\n\(message ?? "")", file: file, line: line)
     }
+}
+
+func assertSamePathsToMinAndToMax<Key: Comparable, Value: Equatable>(lhs: LLRBTree<Key, Value>.Node, rhs: LLRBTree<Key, Value>.Node, message: String? = nil, file: StaticString = #file, line: UInt = #line) {
+    typealias WN = WrappedNode<LLRBTree<Key, Value>.Node>
+    let nodesEqualByElementCmp: (WN, WN) -> Bool = {
+        $0.node.key == $1.node.key && $0.node.value == $1.node.value
+    }
+    guard
+        lhs.pathToMin
+            .elementsEqual(rhs.pathToMin, by: nodesEqualByElementCmp)
+    else {
+        XCTFail("\(message ?? "")", file: file, line: line)
+        return
+    }
+    
+    guard
+        lhs.pathToMax
+            .elementsEqual(rhs.pathToMax, by: nodesEqualByElementCmp)
+    else {
+        XCTFail("\(message ?? "")", file: file, line: line)
+        return
+    }
+}
+
+func assertEqualsByElements<Key: Comparable, Value: Equatable, LHS: Sequence, RHS: Sequence>(lhs: LHS, rhs: RHS, message: String? = nil, file: StaticString = #file, line: UInt = #line) where LHS.Iterator.Element == RHS.Iterator.Element, LHS.Iterator.Element == (Key, Value) {
+    XCTAssertTrue(
+        lhs.elementsEqual(rhs, by: { $0.0 == $1.0 && $0.1 == $1.1 }),
+        "\(message ?? "")",
+        file: file,
+        line: line
+    )
 }
 
 // MARK: - Dummies
@@ -144,6 +199,10 @@ struct MYSKey: Comparable {
     
     static func < (lhs: MYSKey, rhs: MYSKey) -> Bool {
         lhs.k < rhs.k
+    }
+    
+    static func == (lhs: MYSKey, rhs: MYSKey) -> Bool {
+        lhs.k == rhs.k
     }
 }
 
