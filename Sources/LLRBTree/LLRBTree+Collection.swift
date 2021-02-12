@@ -42,15 +42,6 @@ extension LLRBTree: BidirectionalCollection {
     
     public var last: Element? { max }
     
-    public subscript(position: Index) -> (Key, Value) {
-        get {
-            precondition(position.isValidFor(tree: self), "invalid index")
-            precondition(!position.path.isEmpty, "index out of bounds")
-            
-            return position.path.last!.node.element
-        }
-    }
-    
     public func index(after i: Index) -> Index {
         precondition(i.isValidFor(tree: self), "invalid index")
         var next = i
@@ -75,6 +66,15 @@ extension LLRBTree: BidirectionalCollection {
     public func formIndex(before i: inout Index) {
         precondition(i.isValidFor(tree: self), "invalid index")
         i.formPredecessor()
+    }
+    
+    public subscript(position: Index) -> (Key, Value) {
+        get {
+            precondition(position.isValidFor(tree: self), "invalid index")
+            precondition(!position.path.isEmpty, "index out of bounds")
+            
+            return position.path.last!.node.element
+        }
     }
     
 }
