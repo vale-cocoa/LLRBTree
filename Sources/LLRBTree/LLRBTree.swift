@@ -28,8 +28,18 @@
 
 import Foundation
 
-/// A valiue semantics data structure generic over `Key` and  `Value` types,
+/// A value semantics data structure generic over `Key` and  `Value` types,
 /// storing its elements in a prefectly balanced binary search tree.
+///
+/// Left-Leaning Red-Black Trees and Red-Black Trees were invented
+/// by Robert Sedgewick.
+/// This is a porting to Swift from its original Java implementation.
+///
+/// https://www.cs.princeton.edu/~rs/talks/LLRB/RedBlack.pdf
+///
+/// https://www.cs.princeton.edu/~rs/talks/LLRB/LLRB.pdf
+///
+/// - ToDo: Conformormance to CustomStringConvertible and CustomDebugStringConvertible, add more methods and initializers from Dictionary interface with relative tests
 public struct LLRBTree<Key: Comparable, Value> {
     final class ID {  }
     
@@ -621,6 +631,7 @@ extension LLRBTree {
             
             return
         }
+        
         makeUnique()
         try root!
             .setValue(value, forKey: key, uniquingKeysWith: combine)
