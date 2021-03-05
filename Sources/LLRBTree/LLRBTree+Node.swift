@@ -421,6 +421,30 @@ extension LLRBTree.Node {
         fixUp()
     }
     
+    @discardableResult
+    func updateValue(_ v: Value, forKey k: Key) -> Value? {
+        var result: Value? = nil
+        if k < key {
+            if left != nil {
+                result = left!.updateValue(v, forKey: k)
+            } else {
+                left = LLRBTree.Node(key: k, value: v)
+            }
+        } else if k > key {
+            if right != nil {
+                result = right!.updateValue(v, forKey: k)
+            } else {
+                right = LLRBTree.Node(key: k, value: v)
+            }
+        } else {
+            result = value
+            value = v
+        }
+        fixUp()
+        
+        return result
+    }
+    
 }
 
 // MARK: - remove value for key
