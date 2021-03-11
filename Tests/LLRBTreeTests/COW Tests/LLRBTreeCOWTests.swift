@@ -29,39 +29,7 @@
 import XCTest
 @testable import LLRBTree
 
-final class LLRBTReeCOWTests: XCTestCase {
-    var sut: LLRBTree<String, Int>!
-    
-    var sutIncludedKeys: Set<String> {
-        Set(sut.root?.map { $0.0 } ?? [])
-    }
-    
-    var sutNotIncludedKeys: Set<String> {
-        Set(givenKeys.filter { !sutIncludedKeys.contains($0) } )
-    }
-    
-    override func setUp() {
-        super.setUp()
-        
-        sut = LLRBTree()
-    }
-    
-    override func tearDown() {
-        sut = nil
-        
-        super.tearDown()
-    }
-    
-    // MARK: - WHEN
-    private func whenRootContainsAllGivenElements() {
-        sut = LLRBTree(uniqueKeysWithValues: givenElements())
-    }
-    
-    private func whenRootContainsHalfGivenElements() {
-        sut = LLRBTree(uniqueKeysWithValues: givenHalfElements())
-    }
-    
-    // MARK: - Tests
+final class LLRBTReeCOWTests: BaseLLRBTreeTestCase {
     // MARK: - makeUnique() tests
     func testMakeUnique_whenRootIsNil_thenDoesNothing() {
         XCTAssertNil(sut.root)
@@ -72,7 +40,6 @@ final class LLRBTReeCOWTests: XCTestCase {
     func testMakeUnique_whenRootIsNotNilAndIsUniqueStrongReference_thenDoesNothing() {
         whenRootContainsAllGivenElements()
         weak var otherWeakReference = sut.root
-        XCTAssertTrue(isKnownUniquelyReferenced(&sut.root))
         sut.makeUnique()
         XCTAssertTrue(sut.root === otherWeakReference, "sut is not the same instance as before")
     }
@@ -80,13 +47,31 @@ final class LLRBTReeCOWTests: XCTestCase {
     func testMakeUnique_whenRootIsNotNilAndIsNotUniqueReference_thenClonesRoot() {
         whenRootContainsAllGivenElements()
         let otherStrongReference = sut.root
-       XCTAssertFalse(isKnownUniquelyReferenced(&sut.root))
         sut.makeUnique()
         XCTAssertFalse(sut.root === otherStrongReference, "sut.root should be a different instance")
         XCTAssertEqual(sut.root, otherStrongReference)
     }
     
-    // MARK: - Mutating methods are Copy On Write capable tests
+    // MARK: - invalidateIndicies() tests
+    func testInvalidateIndicies_changesID() {
+        let prevID = sut.id
+        sut.invalidateIndices()
+        XCTAssertFalse(sut.id === prevID, "has not changed id reference")
+    }
+    
+    func testInvalidateIndicies_makesPreviouslyStoredIndicesInvalidForThisTree() {
+        whenRootContainsAllGivenElements()
+        let previousIndices = sut.indices
+        let previousEndIndex = sut.endIndex
+        
+        sut.invalidateIndices()
+        XCTAssertFalse(previousEndIndex.isValidFor(tree: sut))
+        for idx in previousIndices {
+            XCTAssertFalse(idx.isValidFor(tree: sut))
+        }
+    }
+    
+    // MARK: - Mutating methods Copy On Write tests
     func testSetValueForKey() {
         // when root is nil, then clone's root stills nil:
         XCTAssertNil(sut.root)
@@ -98,8 +83,23 @@ final class LLRBTReeCOWTests: XCTestCase {
         whenRootContainsHalfGivenElements()
         clone = sut!
         weak var prevCloneRoot = clone.root
-        XCTAssertFalse(isKnownUniquelyReferenced(&sut.root))
         sut[givenKeys.randomElement()!] = 1000
+        XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+    }
+    
+    func testUpdateValueForKey() {
+        // when root is nil, then clone's root stills nil:
+        XCTAssertNil(sut.root)
+        var clone = sut!
+        sut.updateValue(10, forKey: "A")
+        XCTAssertNil(clone.root)
+        
+        // when root is not nil, then sut.root gets copied
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        weak var prevCloneRoot = clone.root
+        sut.updateValue(1000, forKey: givenKeys.randomElement()!)
         XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
         XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
     }
@@ -115,7 +115,6 @@ final class LLRBTReeCOWTests: XCTestCase {
         whenRootContainsHalfGivenElements()
         clone = sut!
         weak var prevCloneRoot = clone.root
-        XCTAssertFalse(isKnownUniquelyReferenced(&sut.root))
         sut.removeValueForMinKey()
         XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
         XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
@@ -132,7 +131,6 @@ final class LLRBTReeCOWTests: XCTestCase {
         whenRootContainsHalfGivenElements()
         clone = sut!
         weak var prevCloneRoot = clone.root
-        XCTAssertFalse(isKnownUniquelyReferenced(&sut.root))
         sut.removeValueForMinKey()
         XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
         XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
@@ -150,7 +148,6 @@ final class LLRBTReeCOWTests: XCTestCase {
         whenRootContainsHalfGivenElements()
         clone = sut!
         weak var prevCloneRoot = clone.root
-        XCTAssertFalse(isKnownUniquelyReferenced(&sut.root))
         sut.removeValue(forKey: sutNotIncludedKeys.randomElement()!)
         XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
         XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
@@ -159,7 +156,6 @@ final class LLRBTReeCOWTests: XCTestCase {
         // then sut.root gets copied
         clone = sut!
         prevCloneRoot = clone.root
-        XCTAssertFalse(isKnownUniquelyReferenced(&sut.root))
         sut.removeValue(forKey: sutIncludedKeys.randomElement()!)
         XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
         XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
@@ -179,7 +175,6 @@ final class LLRBTReeCOWTests: XCTestCase {
         whenRootContainsHalfGivenElements()
         clone = sut!
         weak var prevCloneRoot = clone.root
-        XCTAssertFalse(isKnownUniquelyReferenced(&sut.root))
         sut.merge([], uniquingKeysWith: {_, next in next})
         XCTAssertTrue(sut.root === clone.root, "sut.root should be the same instance")
         XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
@@ -189,7 +184,6 @@ final class LLRBTReeCOWTests: XCTestCase {
         whenRootContainsHalfGivenElements()
         clone = sut!
         prevCloneRoot = clone.root
-        XCTAssertFalse(isKnownUniquelyReferenced(&sut.root))
         sut.merge(givenElements(), uniquingKeysWith: {_, next in return next })
         XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
         XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")

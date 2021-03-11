@@ -989,7 +989,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.inOrderTraverse { expectedResult.append($0.element) }
         
         var result = [(String, Int)]()
-        let iterator = sut.makeIterator()
+        var iterator = sut.makeIterator()
         while let element = iterator.next() {
             result.append(element)
         }
@@ -1474,7 +1474,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         whenBalancedTree()
         let elements: [(key: String, value: Int)] = sut!.map { $0 }
         for element in elements {
-            XCTAssertEqual(sut.value(forKey: element.key), element.value)
+            XCTAssertEqual(sut.getValue(forKey: element.key), element.value)
         }
     }
     
@@ -1484,7 +1484,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         let notContainedKeys = givenKeys
             .filter({ !containedKeys.contains($0) })
         for key in notContainedKeys {
-            XCTAssertNil(sut.value(forKey: key))
+            XCTAssertNil(sut.getValue(forKey: key))
         }
     }
     
@@ -1495,7 +1495,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         for element in prevElements {
             sut.setValue(element.value * 10, forKey: element.key)
             XCTAssertEqual(sut.count, expectedCount)
-            let newValueForKey = sut.value(forKey: element.key)
+            let newValueForKey = sut.getValue(forKey: element.key)
             XCTAssertNotEqual(newValueForKey, element.value)
             XCTAssertEqual(newValueForKey, element.value * 10)
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
@@ -1516,7 +1516,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertEqual(sut.count, prevCount + 1)
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
-            XCTAssertEqual(sut.value(forKey: newKey), newValue)
+            XCTAssertEqual(sut.getValue(forKey: newKey), newValue)
         }
     }
     
@@ -1535,7 +1535,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             let prevCount = sut.count
             XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
             XCTAssertEqual(sut.count, prevCount + 1)
-            XCTAssertEqual(sut.value(forKey: k), newValue)
+            XCTAssertEqual(sut.getValue(forKey: k), newValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
@@ -1556,7 +1556,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             let prevCount = sut.count
             XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
             XCTAssertEqual(sut.count, prevCount + 1)
-            XCTAssertEqual(sut.value(forKey: k), newValue)
+            XCTAssertEqual(sut.getValue(forKey: k), newValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
@@ -1589,7 +1589,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
             XCTAssertFalse(executed)
             XCTAssertEqual(sut.count, prevCount + 1)
-            XCTAssertEqual(sut.value(forKey: k), newValue)
+            XCTAssertEqual(sut.getValue(forKey: k), newValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
@@ -1604,7 +1604,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertNoThrow(try sut.setValue(newValue, forKey: sut.key, uniquingKeysWith: combine))
         XCTAssertTrue(executed)
         XCTAssertEqual(sut.count, prevCount)
-        XCTAssertEqual(sut.value(forKey: sut.key), expectedValue)
+        XCTAssertEqual(sut.getValue(forKey: sut.key), expectedValue)
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
         assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
         
@@ -1622,7 +1622,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
             XCTAssertFalse(executed)
             XCTAssertEqual(sut.count, prevCount + 1)
-            XCTAssertEqual(sut.value(forKey: k), newValue)
+            XCTAssertEqual(sut.getValue(forKey: k), newValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
@@ -1634,30 +1634,67 @@ final class LLRBTreeNodeTests: XCTestCase {
         containedKeys = Set(sut.map { $0.0 })
         for k in containedKeys {
             let prevCount = sut.count
-            let prevValue = sut.value(forKey: k)!
+            let prevValue = sut.getValue(forKey: k)!
             let newValue = givenRandomValue()
             let expectedValue = try? combine(prevValue, newValue)
             executed = false
             XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
             XCTAssertTrue(executed)
             XCTAssertEqual(sut.count, prevCount)
-            XCTAssertEqual(sut.value(forKey: k), expectedValue)
+            XCTAssertEqual(sut.getValue(forKey: k), expectedValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
         }
     }
     
-    // MARK: - remove value for key
-    func testRemoveValueForKey_whenKeyIsInTree_thenRemovesNodeAndUpdatesCountAndAllInvariantsHoldTrue() {
+    // MARK: - updateValue(_:forKey:) test
+    func testUpdateValueForKey_whenKeyIsNotInTree() {
+        // then sets value for key and returns nil
+        whenBalancedTreeWithHalfGivenKeys()
+        sut.color = .black
+        let containedKeys = Set(sut!.map { $0.0 })
+        let notContainedKeys = givenKeys.filter({ !containedKeys.contains($0) })
+        for k in notContainedKeys {
+            let newValue = givenRandomValue()
+            XCTAssertNil(sut.updateValue(newValue, forKey: k))
+            sut.color = .black
+            XCTAssertEqual(sut.getValue(forKey: k), newValue)
+            assertLeftLeaningRedBlackTreeInvariants(root: sut)
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        }
+    }
+    
+    func testUpdateValueForKey_whenKeyIsInTree() {
+        // then updates to newValue node with key and returns
+        // old value for element with key
+        whenBalancedTreeWithAllGivenKeys()
+        sut.color = .black
+        for k in givenKeys {
+            let expectedValue = sut.getValue(forKey: k)
+            let newValue = givenRandomValue()
+            XCTAssertEqual(sut.updateValue(newValue, forKey: k), expectedValue)
+            sut.color = .black
+            XCTAssertEqual(sut.getValue(forKey: k), newValue)
+            assertLeftLeaningRedBlackTreeInvariants(root: sut)
+            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        }
+    }
+        
+    // MARK: - removingElement(withKey:) tests
+    func testRemovingElementWithKey_whenKeyIsInTree_thenReturnsElementWithKeyAndUpdatedTreeWithAllInvariantsHoldingTrue() {
         for _ in 0..<100 {
             whenBalancedTreeWithAllGivenKeys()
             for key in givenKeys.shuffled() {
                 let prevCount = sut?.count ?? 0
-                sut = sut?.removingValue(forKey: key)
+                let expectedValue = sut.getValue(forKey: key)
+                let result = sut.removingElement(withKey: key)
+                sut = result.node
                 sut?.color = .black
                 XCTAssertEqual((sut?.count ?? 0), prevCount - 1)
-                XCTAssertNil(sut?.value(forKey: key))
+                XCTAssertNil(sut?.getValue(forKey: key))
+                XCTAssertEqual(result.element?.key, key)
+                XCTAssertEqual(result.element?.value, expectedValue)
                 if sut != nil {
                     assertLeftLeaningRedBlackTreeInvariants(root: sut)
                     assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
@@ -1665,10 +1702,9 @@ final class LLRBTreeNodeTests: XCTestCase {
             }
             XCTAssertNil(sut, "sut is not nil after having removed all keys")
         }
-        
     }
     
-    func testRemoveValueForKey_whenKeyIsNotInTree_thenCountIsSameAndAllInvariantsHoldsTrue() {
+    func testRemovingElementWithKey_whenKeyIsNotInTree_thenReturnsNilAsElementAndSameTreeWithAllInvariantsTrue() {
         for _ in 0..<100 {
             whenBalancedTreeWithHalfGivenKeys()
             let containedKeys = Set(sut.map { $0.0 })
@@ -1676,58 +1712,76 @@ final class LLRBTreeNodeTests: XCTestCase {
                 .filter { !containedKeys.contains($0) }
             for key in notContainedKeys {
                 let prevCount = sut.count
-                XCTAssertNil(sut.value(forKey: key))
+                XCTAssertNil(sut.getValue(forKey: key))
                 
-                sut = sut.removingValue(forKey: key)
+                let result = sut.removingElement(withKey: key)
+                sut = result.node
                 XCTAssertEqual(sut.count, prevCount)
+                XCTAssertNil(result.element)
                 assertLeftLeaningRedBlackTreeInvariants(root: sut)
                 assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
             }
         }
     }
     
-    // MARK: - removingValueForMinKey() tests
-    func testRemovingValueForMinKey() {
+    // MARK: - removingElementWithMinKey() tests
+    func testRemovingElementWithMinKey() {
         for _ in 0..<100 {
             whenBalancedTreeWithAllGivenKeys()
             
             for minKey in givenKeys.dropLast() {
                 let prevCount = sut.count
-                sut = sut.removingValueForMinKey()
+                let prevMinValue = sut.min.value
+                let result = sut.removingElementWithMinKey()
+                sut = result.node
                 sut.color = .black
                 XCTAssertEqual(sut.count, prevCount - 1)
-                XCTAssertNil(sut.value(forKey: minKey), "node with \(minKey) was not removed")
+                XCTAssertNil(sut.getValue(forKey: minKey), "node with \(minKey) was not removed")
+                XCTAssertEqual(result.element?.key, minKey)
+                XCTAssertEqual(result.element?.value, prevMinValue)
                 assertLeftLeaningRedBlackTreeInvariants(root: sut)
                 assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
             }
+            let minKey = givenKeys.max()
+            let expectedValue = sut.value
             XCTAssertEqual(sut.count, 1)
-            XCTAssertEqual(sut.key, givenKeys.max())
-            sut = sut.removingValueForMinKey()
+            XCTAssertEqual(sut.key, minKey)
+            let result = sut.removingElementWithMinKey()
+            sut = result.node
             XCTAssertNil(sut, "not removed all nodes")
+            XCTAssertEqual(result.element?.key, minKey)
+            XCTAssertEqual(result.element?.value, expectedValue)
         }
     }
     
-    // MARK: - removingValueForMaxKey() tests
-    func testRemovingValueForMaxKey() {
-        
+    // MARK: - removingElementWithMaxKey() tests
+    func testRemovingElementWithMaxKey() {
         for _ in 0..<100 {
             whenBalancedTreeWithAllGivenKeys()
             
             for maxKey in givenKeys.dropFirst().sorted(by: >) {
                 let prevCount = sut.count
-                sut = sut.removingValueForMaxKey()
+                let expectedValue = sut.max.value
+                let result = sut.removingElementWithMaxKey()
+                sut = result.node
                 sut.color = .black
                 XCTAssertEqual(sut.count, prevCount - 1)
-                XCTAssertNil(sut.value(forKey: maxKey), "node with key \(maxKey) was not removed")
+                XCTAssertNil(sut.getValue(forKey: maxKey), "node with key \(maxKey) was not removed")
+                XCTAssertEqual(result.element?.key, maxKey)
+                XCTAssertEqual(result.element?.value, expectedValue)
                 assertLeftLeaningRedBlackTreeInvariants(root: sut)
                 assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
             }
+            let maxKey = givenKeys.min()
+            let maxValue = sut.value
             XCTAssertEqual(sut.count, 1)
-            XCTAssertEqual(sut.key, givenKeys.min())
-            sut = sut.removingValueForMaxKey()
+            XCTAssertEqual(sut.key, maxKey)
+            let result = sut.removingElementWithMaxKey()
+            sut = result.node
             XCTAssertNil(sut, "not removed all nodes")
+            XCTAssertEqual(result.element?.key, maxKey)
+            XCTAssertEqual(result.element?.value, maxValue)
         }
-        
     }
     
 }

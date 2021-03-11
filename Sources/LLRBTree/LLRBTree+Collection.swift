@@ -30,16 +30,32 @@ import Foundation
 import BinaryNode
 
 extension LLRBTree: BidirectionalCollection {
+    /// The number of elements stored in this tree.
+    ///
+    /// - Complexity: O(1)
+    @inline(__always)
+    public var count: Int { root?.count ?? 0 }
+    
+    /// A boolean value, `true` when no element is stored in this tree.
+    ///
+    /// - Complexity: O(1)
+    @inline(__always)
+    public var isEmpty: Bool { root == nil }
+    
+    @inline(__always)
     public var startIndex: Index {
         Index(asStartIndexOf: self)
     }
     
+    @inline(__always)
     public var endIndex: Index {
         Index(asEndIndexOf: self)
     }
     
+    @inlinable
     public var first: Element? { min }
     
+    @inlinable
     public var last: Element? { max }
     
     public func index(after i: Index) -> Index {
@@ -68,7 +84,32 @@ extension LLRBTree: BidirectionalCollection {
         i.formPredecessor()
     }
     
-    public subscript(position: Index) -> (Key, Value) {
+    /// Accesses the key-value pair at the specified position.
+    ///
+    /// This subscript takes an index into the tree, instead of a key, and
+    /// returns the corresponding key-value pair as a tuple. When performing
+    /// collection-based operations that return an index into a tree, use
+    /// this subscript with the resulting value.
+    ///
+    /// For example, to find the key for a particular value in a tree use
+    /// the `firstIndex(where:)` method.
+    ///
+    ///     let countryCodes: LLRBTree<String, String> = ["BR": "Brazil", "GH": "Ghana", "JP": "Japan"]
+    ///     if let index = countryCodes.firstIndex(where: { $0.value == "Japan" }) {
+    ///         print(countryCodes[index])
+    ///         print("Japan's country code is '\(countryCodes[index].key)'.")
+    ///     } else {
+    ///         print("Didn't find 'Japan' as a value in the dictionary.")
+    ///     }
+    ///     // Prints "("JP", "Japan")"
+    ///     // Prints "Japan's country code is 'JP'."
+    ///
+    /// - Parameter position:   The position of the key-value pair to access.
+    ///                         `position` must be a valid index of the tree
+    ///                         and not equal to `endIndex`.
+    /// - Returns:  A two-element tuple with the key and value corresponding to
+    ///             `position`.
+    public subscript(position: Index) -> Element {
         get {
             precondition(position.isValidFor(tree: self), "invalid index")
             precondition(!position.path.isEmpty, "index out of bounds")
@@ -77,9 +118,62 @@ extension LLRBTree: BidirectionalCollection {
         }
     }
     
+    /// Removes and returns the key-value pair at the specified index.
+    ///
+    /// Calling this method invalidates any existing indices for use with this
+    /// tree.
+    ///
+    /// - Parameter index:  The position of the key-value pair to remove. `index`
+    ///                     must be a valid index of the tree,
+    ///                     and must not equal the tree's end index.
+    /// - Returns: The key-value pair that correspond to `index`.
+    ///
+    /// - Complexity: Amortized O(1).
+    @discardableResult
+    public mutating func remove(at index: Index) -> Element {
+        precondition(index >= startIndex && index < endIndex, "index out of bounds")
+        let e = index.path.last!.node.element
+        defer {
+            removeValue(forKey: e.key)
+        }
+        
+        return e
+    }
+    
+    /// Returns the index for the given key.
+    ///
+    /// If the given key is found in the tree, this method returns an index
+    /// into the tree that corresponds with the key-value pair.
+    ///
+    ///     let countryCodes: LLRBTree<String, String> = ["BR": "Brazil", "GH": "Ghana", "JP": "Japan"]
+    ///     let index = countryCodes.index(forKey: "JP")
+    ///
+    ///     print("Country code for \(countryCodes[index!].value): '\(countryCodes[index!].key)'.")
+    ///     // Prints "Country code for Japan: 'JP'."
+    ///
+    /// - Parameter key: The key to find in the tree.
+    /// - Returns:  The index for `key` and its associated value if `key` is in
+    ///             the tree; otherwise, `nil`.
+    public func index(forKey key: Key) -> Index? {
+        let idx = Index(asIndexOfKey: key, for: self)
+        
+        return idx < endIndex ? idx : nil
+    }
+    
 }
 
 extension LLRBTree {
+    /// The position of a key-value pair in a tree.
+    ///
+    /// Tree has two subscripting interfaces:
+    ///
+    /// 1. Subscripting with a key, yielding an optional value:
+    ///
+    ///        v = d[k]!
+    ///
+    /// 2. Subscripting with an index, yielding a key-value pair:
+    ///
+    ///        (k, v) = d[i]
     public struct Index {
         var id: ID
         
@@ -100,6 +194,34 @@ extension LLRBTree {
             self.id = tree.id
             if tree.root != nil {
                 self.root = WrappedNode(node: tree.root!)
+            }
+        }
+        
+        init(asIndexOfKey k: Key, for tree: LLRBTree) {
+            self.id = tree.id
+            if tree.root != nil {
+                self.root = WrappedNode(node: tree.root!)
+                var found = false
+                var currentNode: WrappedNode? = WrappedNode(node: tree.root!)
+                while !found && currentNode != nil {
+                    self.path += [currentNode!]
+                    if k == currentNode!.node.key {
+                        found = true
+                        break
+                    } else if k < currentNode!.node.key {
+                        currentNode = currentNode!.wrappedLeft
+                    } else {
+                        currentNode = currentNode!.wrappedRight
+                    }
+                }
+                
+                guard
+                    found
+                else {
+                    self.path = []
+                    
+                    return
+                }
             }
         }
         
@@ -198,6 +320,181 @@ extension LLRBTree.Index: Comparable {
     
     static func areValid(lhs: LLRBTree.Index, rhs: LLRBTree.Index) -> Bool {
         lhs.id === rhs.id
+    }
+    
+}
+
+// MARK: - Keys type and keys computed property
+extension LLRBTree {
+    /// A view of a tree's keys
+    public struct Keys: BidirectionalCollection, Equatable {
+        let _tree: LLRBTree
+        
+        fileprivate init(_ tree: LLRBTree) {
+            self._tree = tree
+        }
+        
+        // BidirectionalCollection conformance
+        public typealias Element = Key
+        
+        public typealias Index = LLRBTree<Key, Value>.Index
+        
+        public var count: Int { _tree.count }
+        
+        public var isEmpty: Bool { _tree.isEmpty }
+        
+        public var first: Element? { _tree.first?.key }
+        
+        public var last: Element? { _tree.last?.key }
+        
+        public var startIndex: Index { _tree.startIndex }
+        
+        public var endIndex: Index { _tree.endIndex }
+        
+        public func index(after i: Index) -> Index {
+            _tree.index(after: i)
+        }
+        
+        public func formIndex(after i: inout LLRBTree<Key, Value>.Index) {
+            _tree.formIndex(after: &i)
+        }
+        
+        public func index(before i: Index) -> Index {
+            _tree.index(before: i)
+        }
+        
+        public func formIndex(before i: inout LLRBTree<Key, Value>.Index) {
+            _tree.formIndex(before: &i)
+        }
+        
+        public subscript(position: Index) -> Key {
+            _tree[position].key
+        }
+        
+        // Equatable conformance
+        public static func == (lhs: Keys, rhs: Keys) -> Bool {
+            guard lhs._tree.root !== rhs._tree.root else { return true }
+            
+            return lhs._tree.elementsEqual(rhs._tree, by: { $0.key == $1.key })
+        }
+        
+    }
+    
+    /// A collection containing just the keys of the tree.
+    ///
+    /// When iterated over, keys appear in this collection in the same order as
+    /// they occur in the tree's key-value pairs. Each key in the keys
+    /// collection has a unique value.
+    ///
+    ///     let countryCodes: LLRBTree<String, String> = ["BR": "Brazil", "GH": "Ghana", "JP": "Japan"]
+    ///     print(countryCodes)
+    ///     // Prints "["BR": "Brazil", "JP": "Japan", "GH": "Ghana"]"
+    ///
+    ///     for k in countryCodes.keys {
+    ///         print(k)
+    ///     }
+    ///     // Prints "BR"
+    ///     // Prints "JP"
+    ///     // Prints "GH"
+    ///
+    /// - Complexity: O(*n*) where *n* is lenght of this hash table.
+    @inline(__always)
+    public var keys: Keys { Keys(self) }
+    
+}
+
+// MARK: - Values type and values computed property
+extension LLRBTree {
+    /// A view of a tree's values.
+    public struct Values: BidirectionalCollection, MutableCollection {
+        fileprivate(set) var _tree: LLRBTree
+        
+        fileprivate init(_ tree: LLRBTree) {
+            self._tree = tree
+        }
+        
+        // BidirectionalCollection and MutableCollection conformances
+        public typealias Element = Value
+        
+        public typealias Index = LLRBTree<Key, Value>.Index
+        
+        public var count: Int { _tree.count }
+        
+        public var isEmpty: Bool { _tree.isEmpty }
+        
+        public var first: Element? { _tree.first?.value }
+        
+        public var last: Element? { _tree.last?.value }
+        
+        public var startIndex: Index { _tree.startIndex }
+        
+        public var endIndex: Index { _tree.endIndex }
+        
+        public func index(after i: Index) -> Index {
+            _tree.index(after: i)
+        }
+        
+        public func formIndex(after i: inout LLRBTree<Key, Value>.Index) {
+            _tree.formIndex(after: &i)
+        }
+        
+        public func index(before i: Index) -> Index {
+            _tree.index(before: i)
+        }
+        
+        public func formIndex(before i: inout LLRBTree<Key, Value>.Index) {
+            _tree.formIndex(before: &i)
+        }
+        
+        public subscript(position: LLRBTree<Key, Value>.Index) -> Value {
+            get { _tree[position].value }
+            
+            mutating set {
+                precondition(position >= startIndex && position < endIndex, "index out of bounds")
+                let k = position.path.last!.node.key
+                _tree[k] = newValue
+            }
+        }
+        
+    }
+    
+    /// A collection containing just the values of the tree.
+    ///
+    /// When iterated over, values appear in this collection in the same order as
+    /// they occur in the tree's key-value pairs.
+    ///
+    ///     let countryCodes: LLRBTree<String, String> = ["BR": "Brazil", "GH": "Ghana", "JP": "Japan"]
+    ///     print(countryCodes)
+    ///     // Prints "["BR": "Brazil", "JP": "Japan", "GH": "Ghana"]"
+    ///
+    ///     for v in countryCodes.values {
+    ///         print(v)
+    ///     }
+    ///     // Prints "Brazil"
+    ///     // Prints "Japan"
+    ///     // Prints "Ghana"
+    ///
+    /// - Complexity: O(*n*) where *n* is lenght of this tree.
+    @inline(__always)
+    public var values: Values {
+        get { Values(self) }
+        
+        _modify {
+            var values = Values(Self())
+            swap(&values._tree, &self)
+            defer {
+                self = values._tree
+            }
+            yield &values
+        }
+    }
+}
+
+extension LLRBTree.Values: Equatable where Value: Equatable {
+    public static func == (lhs: LLRBTree.Values, rhs: LLRBTree.Values) -> Bool {
+        guard lhs._tree.root !== rhs._tree.root else { return true }
+        
+        return lhs._tree.elementsEqual(rhs._tree, by: { $0.value == $1.value })
     }
     
 }

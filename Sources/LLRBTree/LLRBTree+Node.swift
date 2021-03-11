@@ -197,29 +197,39 @@ extension LLRBTree.Node {
 
 // MARK: - Sequence conformance
 extension LLRBTree.Node: Sequence {
-    typealias Element = (Key, Value)
+    typealias Element = (key: Key, value: Value)
     
-    var underestimatedCount: Int { return count }
-    
-    public func makeIterator() -> AnyIterator<Element> {
-        var stack = [WrappedNode<LLRBTree.Node>]()
-        var node: WrappedNode<LLRBTree.Node>? = WrappedNode(node: self)
+    struct Iterator: IteratorProtocol {
+        private var stack = [WrappedNode<LLRBTree.Node>]()
+        private var node: WrappedNode<LLRBTree.Node>?
         
-        return AnyIterator {
+        init(_ node: LLRBTree.Node) {
+            self.node = withExtendedLifetime(node) { WrappedNode(node: $0) }
+        }
+        
+        mutating func next() -> Element? {
             if let n = node {
                 stack.append(n)
                 stack.append(contentsOf: n.node.pathToMin)
             }
+            
             guard
                 let current = stack.popLast()
             else { return nil }
             
             defer {
-                node = current.node.right != nil ? WrappedNode(node: current.node.right!) : nil
+                self.node = withExtendedLifetime(current.node) { current.wrappedRight }
             }
             
             return current.node.element
         }
+        
+    }
+    
+    var underestimatedCount: Int { count }
+    
+    func makeIterator() -> Iterator {
+        Iterator(self)
     }
     
 }
@@ -377,28 +387,12 @@ extension LLRBTree.Node {
 // MARK: - C.R.U.D.
 // MARK: - get/set value for key
 extension LLRBTree.Node {
-    func value(forKey k: Key) -> Value? {
+    func getValue(forKey k: Key) -> Value? {
         binarySearch(k)?.value
     }
     
     func setValue(_ v: Value, forKey k: Key) {
-        if k < key {
-            if left != nil {
-                left!.setValue(v, forKey: k)
-            } else {
-                left = LLRBTree.Node(key: k, value: v)
-            }
-        } else if k > key {
-            if right != nil {
-                right!.setValue(v, forKey: k)
-            } else {
-                right = LLRBTree.Node(key: k, value: v)
-            }
-        } else {
-            value = v
-        }
-        
-        fixUp()
+        setValue(v, forKey: k, uniquingKeysWith: { _, newValue in return newValue })
     }
     
     func setValue(_ v: Value, forKey k: Key, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows {
@@ -447,65 +441,77 @@ extension LLRBTree.Node {
     
 }
 
-// MARK: - remove value for key
+// MARK: - remove
 extension LLRBTree.Node {
-    func removingValue(forKey k: Key) -> LLRBTree.Node? {
+    func removingElement(withKey k: Key) -> (element: Element?, node: LLRBTree<Key, Value>.Node?) {
+        var childResult: (element: Element?, node: LLRBTree<Key, Value>.Node?) = (nil, nil)
         if k < key {
             if left != nil && !hasRedLeftChild && !hasRedLeftGrandChild {
                 moveRedLeft()
             }
-            left = left?.removingValue(forKey: k)
+            childResult = left?.removingElement(withKey: k) ?? childResult
+            left = childResult.node
         } else {
             if hasRedLeftChild { rotateRight() }
-            if k == key && right == nil { return nil }
+            if k == key && right == nil { return (element, nil) }
             if (right != nil && !hasRedRightChild && !right!.hasRedLeftChild) {
                 moveRedRight()
             }
             if k == key {
                 let rightMinElement = right!.min.element
-                key = rightMinElement.0
-                value = rightMinElement.1
-                right = right!.removingValueForMinKey()
+                right!.min.key = key
+                right!.min.value = value
+                key = rightMinElement.key
+                value = rightMinElement.value
+                childResult = right!.removingElementWithMinKey()
             } else {
-                right = right?.removingValue(forKey: k)
+                childResult = right?.removingElement(withKey: k) ?? childResult
             }
+            right = childResult.node
         }
         
         fixUp()
         
-        return self
+        return (childResult.element, self)
     }
     
-    func removingValueForMinKey() -> LLRBTree.Node? {
-        guard left != nil else { return nil }
+    func removingElementWithMinKey() -> (element: Element?, node: LLRBTree<Key, Value>.Node?) {
+        guard
+            left != nil
+        else {
+            
+            return (element, nil)
+        }
         
         if (!hasRedLeftChild && !hasRedLeftGrandChild) {
             moveRedLeft()
         }
         
-        left = left!.removingValueForMinKey()
+        let childResult = left!.removingElementWithMinKey()
+        left = childResult.node
         
         fixUp()
         
-        return self
+        return (childResult.element, self)
     }
     
-    func removingValueForMaxKey() -> LLRBTree.Node? {
+    func removingElementWithMaxKey() -> (element: Element?, node: LLRBTree<Key, Value>.Node?) {
         if hasRedLeftChild {
             rotateRight()
         }
         
-        guard right != nil else { return nil }
+        guard right != nil else { return (element, nil) }
         
         if !hasRedRightChild && !right!.hasRedLeftChild {
             moveRedRight()
         }
         
-        right = right!.removingValueForMaxKey()
+        let childResult = right!.removingElementWithMaxKey()
+        right = childResult.node
         
         fixUp()
         
-        return self
+        return (childResult.element, self)
     }
     
 }

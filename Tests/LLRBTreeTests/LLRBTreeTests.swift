@@ -29,39 +29,7 @@
 import XCTest
 @testable import LLRBTree
 
-final class LLRBTreeTests: XCTestCase {
-    var sut: LLRBTree<String, Int>!
-    
-    var sutIncludedKeys: Set<String> {
-        Set(sut.root?.map { $0.0 } ?? [])
-    }
-    
-    var sutNotIncludedKeys: Set<String> {
-        Set(givenKeys.filter { !sutIncludedKeys.contains($0) } )
-    }
-    
-    override func setUp() {
-        super.setUp()
-        
-        sut = LLRBTree()
-    }
-    
-    override func tearDown() {
-        sut = nil
-        
-        super.tearDown()
-    }
-    
-    // MARK: - WHEN
-    private func whenRootContainsAllGivenElements() {
-        sut = LLRBTree(uniqueKeysWithValues: givenElements())
-    }
-    
-    private func whenRootContainsHalfGivenElements() {
-        sut = LLRBTree(uniqueKeysWithValues: givenHalfElements())
-    }
-    
-    // MARK: - Tests
+final class LLRBTreeTests: BaseLLRBTreeTestCase {
     func testInit() {
         sut = LLRBTree()
         XCTAssertNotNil(sut)
@@ -115,7 +83,8 @@ final class LLRBTreeTests: XCTestCase {
         
         // other'e root is not nil
         let elements = givenElements()
-        other.root = LLRBTree.Node(key: elements.first!.key, value: elements.first!.value, color: .black)
+        let otherRoot = LLRBTree.Node(key: elements.first!.key, value: elements.first!.value, color: .black)
+        other = LLRBTree(otherRoot)
         for element in elements.dropFirst() {
             other.root!.setValue(element.value, forKey: element.key)
             other.root!.color = .black
@@ -124,12 +93,12 @@ final class LLRBTreeTests: XCTestCase {
         sut = LLRBTree(other)
         XCTAssertNotNil(sut)
         XCTAssertNotNil(sut.root, "root was not set")
-        XCTAssertFalse(sut.root === other.root, "root was not copied but just referenced")
+        XCTAssertTrue(sut.root === other.root, "root is not same instance")
         XCTAssertEqual(sut.root, other.root)
     }
     
     func testInitUniqueKeysWithValues_whenSequenceIsNotAnotherLLRBTRee() {
-        var keysAndValues = AnySequence<(String, Int)>(AnyIterator({ return nil }))
+        var keysAndValues = AnySequence<(key: String, value: Int)>(AnyIterator({ return nil }))
         // when keysAndValues is empty
         sut = LLRBTree(uniqueKeysWithValues: keysAndValues)
         XCTAssertNotNil(sut)
@@ -219,13 +188,105 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNoThrow(try sut = LLRBTree(keysAndValues, uniquingKeysWith: combine))
         XCTAssertNotNil(sut.root)
         XCTAssertTrue(executed)
-        XCTAssertEqual(sut.value(forKey: duplicateKey), expectedValueForDuplicateKey)
+        XCTAssertEqual(sut.getValue(forKey: duplicateKey), expectedValueForDuplicateKey)
         for element in keysAndValues.dropLast(3) {
-            XCTAssertEqual(sut.value(forKey: element.0), element.1)
+            XCTAssertEqual(sut.getValue(forKey: element.0), element.1)
         }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
+        }
+    }
+    
+    func testInitGroupingBy_whenValuesIsEmpty_thenKeyForValueNeverExecutes() {
+        typealias GrouppedTree = LLRBTree<String, Array<Int>>
+        var hasExecuted = false
+        let keyForValue: (Int) throws -> String = { _ in
+            hasExecuted = true
+            throw err
+        }
+        XCTAssertNoThrow(try GrouppedTree(grouping: [], by: keyForValue))
+        XCTAssertFalse(hasExecuted)
+    }
+    
+    func testInitGroupingBy_whenValuesIsNotEmpty_thenKeyForValueExecutes() {
+        typealias GrouppedTree = LLRBTree<String, Array<Int>>
+        var hasExecuted = false
+        let keyForValue: (Int) throws -> String = { _ in
+            hasExecuted = true
+            throw err
+        }
+        XCTAssertThrowsError(try GrouppedTree(grouping: 0..<100, by: keyForValue))
+        XCTAssertTrue(hasExecuted)
+    }
+    
+    func testInitGroupingBy_whenKeyForValueThrows_thenRethrows() {
+        typealias GrouppedTree = LLRBTree<String, Array<Int>>
+        let keyForValue: (Int) throws -> String = { _ in throw err }
+        do {
+            let _ = try GrouppedTree(grouping: 0..<100, by: keyForValue)
+        } catch {
+            XCTAssertEqual(error as NSError, err)
+            
+            return
+        }
+        XCTFail("didn't rethrow")
+    }
+    
+    func testInitGroupingBy_whenValuesIsNotEmptyAndKeyForValueDoesntThrow_thenInitializesAccordingly() {
+        typealias GrouppedTree = LLRBTree<String, Array<Int>>
+        let keyForValue: (Int) throws -> String = { v in
+            switch v {
+            case 0..<10: return "A"
+            case 10..<100: return "B"
+            case 100..<300: return "C"
+            case 300...: return "D"
+            default: throw err
+            }
+        }
+        
+        let values = 0..<300
+        let expectedResult = try! Dictionary(grouping: values, by: keyForValue)
+        // values implements withContiguousStorageIfAvailable
+        var result: GrouppedTree!
+        XCTAssertNoThrow(result = try GrouppedTree(grouping: Array(values), by: keyForValue))
+        if let r = result {
+            XCTAssertEqual(r.count, expectedResult.count)
+            for (key, value) in expectedResult {
+                XCTAssertEqual(r.root?.getValue(forKey: key), value)
+            }
+        } else {
+            XCTFail("didn't initialize")
+        }
+        
+        // values is a sequence which doesn't
+        // implements withContiguousStorageIfAvailable
+        // and returns 0 for underestimatedCount
+        var seq = Seq(Array(values))
+        seq.ucIsZero = true
+        XCTAssertNoThrow(result = try GrouppedTree(grouping: seq, by: keyForValue))
+        if let r = result {
+            XCTAssertEqual(r.count, expectedResult.count)
+            for (key, value) in expectedResult {
+                XCTAssertEqual(r.root?.getValue(forKey: key), value)
+            }
+        } else {
+            XCTFail("didn't initialize")
+        }
+        
+        // values is a sequence which doesn't
+        // implements withContiguousStorageIfAvailable
+        // and returns a value for underestimatedCount a value which is equal to
+        // half of its elements count
+        seq.ucIsZero = false
+        XCTAssertNoThrow(result = try GrouppedTree(grouping: seq, by: keyForValue))
+        if let r = result {
+            XCTAssertEqual(r.count, expectedResult.count)
+            for (key, value) in expectedResult {
+                XCTAssertEqual(r.root?.getValue(forKey: key), value)
+            }
+        } else {
+            XCTFail("didn't initialize")
         }
     }
     
@@ -318,7 +379,7 @@ final class LLRBTreeTests: XCTestCase {
         // then returns nil
         sut = LLRBTree(uniqueKeysWithValues: givenHalfElements())
         for key in sutNotIncludedKeys.shuffled() {
-            XCTAssertNil(sut.root!.value(forKey: key))
+            XCTAssertNil(sut.root!.getValue(forKey: key))
             XCTAssertNil(sut[key])
         }
         
@@ -326,7 +387,7 @@ final class LLRBTreeTests: XCTestCase {
         // returns value
         let containedKeys = sut.root!.map { $0.0 }
         for key in containedKeys {
-            let expectedValue = sut.root!.value(forKey: key)
+            let expectedValue = sut.root!.getValue(forKey: key)
             XCTAssertNotNil(expectedValue)
             XCTAssertEqual(sut[key], expectedValue)
         }
@@ -337,11 +398,11 @@ final class LLRBTreeTests: XCTestCase {
         for key in givenKeys.shuffled() {
             let prevCount = sut.count
             let newValue = givenRandomValue()
-            XCTAssertNil(sut.root?.value(forKey: key))
+            XCTAssertNil(sut.root?.getValue(forKey: key))
             sut[key] = newValue
             XCTAssertEqual(sut.count, prevCount + 1)
-            XCTAssertNotNil(sut.root?.value(forKey: key))
-            XCTAssertEqual(sut.root?.value(forKey: key), newValue)
+            XCTAssertNotNil(sut.root?.getValue(forKey: key))
+            XCTAssertEqual(sut.root?.getValue(forKey: key), newValue)
             XCTAssertTrue(sut.rootIsBlack, "root should be a black node")
         }
         XCTAssertFalse(sut.isEmpty)
@@ -350,13 +411,13 @@ final class LLRBTreeTests: XCTestCase {
         // when key is in root, then sets newValue for the root's node
         // with that key:
         for key in givenKeys.shuffled() {
-            let oldValue = sut.root?.value(forKey: key)
+            let oldValue = sut.root?.getValue(forKey: key)
             XCTAssertNotNil(oldValue)
             let newValue = oldValue! + 1
             let prevCount = sut.count
             sut[key] = newValue
             XCTAssertEqual(sut.count, prevCount)
-            XCTAssertEqual(sut.root?.value(forKey: key), newValue)
+            XCTAssertEqual(sut.root?.getValue(forKey: key), newValue)
             XCTAssertTrue(sut.rootIsBlack, "root should be a black node")
         }
     }
@@ -378,7 +439,7 @@ final class LLRBTreeTests: XCTestCase {
             let prevCount = sut.count
             sut[key] = nil
             XCTAssertEqual(sut.count, prevCount - 1)
-            XCTAssertNil(sut.root?.value(forKey: key))
+            XCTAssertNil(sut.root?.getValue(forKey: key))
             XCTAssertTrue(sut.rootIsBlack, "root should be a black node")
             if sut.root != nil {
                 assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
@@ -405,21 +466,116 @@ final class LLRBTreeTests: XCTestCase {
         }
     }
     
+    // MARK: - subscript(key:default:) tests
+    func testSubscriptKeyDefault_getter() {
+        XCTAssertTrue(sut.isEmpty)
+        // when is empty then returns defaultValue
+        for key in givenKeys {
+            let defaultValue = givenRandomValue() * 100
+            XCTAssertEqual(sut[key, default: defaultValue], defaultValue)
+        }
+        // when is not empty and key is not in tree,
+        // then returns defaultValue
+        whenRootContainsHalfGivenElements()
+        for key in sutNotIncludedKeys {
+            let defaultValue = givenRandomValue() * 100
+            XCTAssertEqual(sut[key, default: defaultValue], defaultValue)
+        }
+        
+        // when is not empty and key is in tree,
+        // then returns value for key
+        for key in sutIncludedKeys {
+            let defaultValue = givenRandomValue() * 100
+            let expectedValue = sut.getValue(forKey: key)
+            XCTAssertEqual(sut[key, default: defaultValue], expectedValue)
+        }
+    }
+    
+    func testSubscriptKeyDefault_setter() {
+        // when is empty, then adds newValue for key
+        for key in givenKeys {
+            sut = LLRBTree()
+            let copy = sut!
+            let defaultValue = givenRandomValue() * 100
+            let newValue = givenRandomValue()
+            sut[key, default: defaultValue] = newValue
+            XCTAssertEqual(sut[key], newValue)
+            XCTAssertFalse(sut.root === copy.root, "has not done copy on write")
+            XCTAssertFalse(sut.id === copy.id, "has not changed id")
+        }
+        
+        // when is not empty and doesn't contain key,
+        // then adds new element with newValue for key
+        whenRootContainsHalfGivenElements()
+        for key in sutNotIncludedKeys {
+            let defaultValue = givenRandomValue() * 100
+            let newValue = givenRandomValue()
+            let copy = sut!
+            let prevCount = sut.count
+            sut[key, default: defaultValue] = newValue
+            XCTAssertEqual(sut[key], newValue)
+            XCTAssertEqual(sut.count, prevCount + 1)
+            XCTAssertFalse(sut.root === copy.root, "has not done copy on write")
+            XCTAssertFalse(sut.id === copy.id, "has not changed id")
+        }
+        
+        // when is not empty and contains key,
+        // then updates element with key to newValue
+        for key in sutIncludedKeys {
+            let defaultValue = givenRandomValue() * 100
+            let newValue = givenRandomValue()
+            let copy = sut!
+            let prevCount = sut.count
+            sut[key, default: defaultValue] = newValue
+            XCTAssertEqual(sut[key], newValue)
+            XCTAssertEqual(sut.count, prevCount)
+            XCTAssertFalse(sut.root === copy.root, "has not done copy on write")
+            XCTAssertFalse(sut.id === copy.id, "has not changed id")
+        }
+    }
+    
+    func testSubscriptKeyDefault_getterThenSetter() {
+        // when is empty, then uses defaultValue
+        for key in givenKeys {
+            sut = LLRBTree()
+            let defaultValue = givenRandomValue() * 100
+            let expectedResult = defaultValue + 30
+            sut[key, default: defaultValue] += 30
+            XCTAssertEqual(sut[key], expectedResult)
+        }
+        
+        // when is not empty, then uses defaultValue for keys not
+        // contained and stored value for contained keys
+        whenRootContainsHalfGivenElements()
+        for key in givenKeys {
+            let defaultValue = givenRandomValue() * 100
+            let expectedResult: Int!
+            if let oldValue = sut[key] {
+                expectedResult = oldValue + 30
+            } else {
+                expectedResult = defaultValue + 30
+            }
+            sut[key, default: defaultValue] += 30
+            XCTAssertEqual(sut[key], expectedResult)
+        }
+    }
+    
     // MARK: - remove value for minKey and maxKey
     func testRemoveValueForMinKey() {
-        // when root is nil, nothing happens
+        // when root is nil, nothing happens and returns nil
         XCTAssertNil(sut.root)
-        sut.removeValueForMinKey()
+        XCTAssertNil(sut.removeValueForMinKey())
         XCTAssertNil(sut.root)
         
         // when root contains elements,
-        // then removes element with minKey:
+        // then removes element with minKey ands returns its value:
         whenRootContainsAllGivenElements()
         while sut.count > 0 {
             let prevMinKey = sut.minKey
             let prevCount = sut.count
+            let prevMinValue = sut.min?.value
             
-            sut.removeValueForMinKey()
+            XCTAssertEqual(sut.removeValueForMinKey(), prevMinValue)
             XCTAssertEqual(sut.count, prevCount - 1)
             XCTAssertNotEqual(sut.minKey, prevMinKey)
             if prevMinKey != nil {
@@ -433,19 +589,20 @@ final class LLRBTreeTests: XCTestCase {
     }
     
     func testRemoveValueForMaxKey() {
-        // when root is nil, nothing happens
+        // when root is nil, nothing happens and returns nil
         XCTAssertNil(sut.root)
-        sut.removeValueForMinKey()
+        XCTAssertNil(sut.removeValueForMinKey())
         XCTAssertNil(sut.root)
         
         // when root contains elements,
-        // then removes element with maxKey
+        // then removes element with maxKey and returns its value
         whenRootContainsAllGivenElements()
         while sut.count > 0 {
             let prevMaxKey = sut.maxKey
             let prevCount = sut.count
+            let prevMaxValue = sut.max?.value
             
-            sut.removeValueForMaxKey()
+            XCTAssertEqual(sut.removeValueForMaxKey(), prevMaxValue)
             XCTAssertEqual(sut.count, prevCount - 1)
             XCTAssertNotEqual(sut.maxKey, prevMaxKey)
             if prevMaxKey != nil {
@@ -456,6 +613,26 @@ final class LLRBTreeTests: XCTestCase {
             XCTAssertTrue(sut.rootIsBlack)
         }
         XCTAssertNil(sut.root, "root is not nil after all its elements have been removed")
+    }
+    
+    // MARK: - removeAll() test
+    func testRemoveAll() {
+        // when is empty, then changes id
+        XCTAssertTrue(sut.isEmpty)
+        weak var prevID = sut.id
+        sut.removeAll()
+        XCTAssertNil(sut.root)
+        XCTAssertFalse(sut.id === prevID, "has not changed id")
+        
+        // when is not empty, then sets root to nil and changes id
+        whenRootContainsHalfGivenElements()
+        prevID = sut.id
+        let clone = sut!
+        sut.removeAll()
+        XCTAssertNil(sut.root)
+        XCTAssertFalse(sut.id === prevID, "has not changed id")
+        XCTAssertNotNil(clone.root, "has set to nil also copy's root")
+        XCTAssertTrue(clone.id === prevID, "has changed id on clone")
     }
     
     // MARK: - rank(_:), floor(_:), ceiling(_:), select(position:) methods tests
@@ -592,7 +769,7 @@ final class LLRBTreeTests: XCTestCase {
         // then returns same root's iterator
         whenRootContainsAllGivenElements()
         sutIter = sut.makeIterator()
-        let rootIter = sut.root!.makeIterator()
+        var rootIter = sut.root!.makeIterator()
         while let sutElement = sutIter.next() {
             let rootElement = rootIter.next()
             XCTAssertEqual(sutElement.0, rootElement?.0)
@@ -641,26 +818,34 @@ final class LLRBTreeTests: XCTestCase {
         // Leverages on BinaryNode forEach(_:) implementation
     }
     
-    func testFilter() {
+    func testSequenceFilter() {
+        var result: [(key: String, value: Int)]? = nil
+        
         // when root is nil never throws:
         XCTAssertNil(sut.root)
-        XCTAssertNoThrow(try sut.filter(alwaysThrowingPredicate))
+        XCTAssertNoThrow(result = try sut.filter(alwaysThrowingPredicate))
+        XCTAssertNotNil(result)
         
         // when root is nil, then isIncluded never executes:
+        result = nil
         var executed: Bool = false
-        let _ = sut.filter { _ in
+        result = sut.filter { _ in
             executed = true
             return false
         }
         XCTAssertFalse(executed)
+        XCTAssertNotNil(result)
         
         // when root is not nil and isIncluded throws, then rethrows
         whenRootContainsAllGivenElements()
-        XCTAssertThrowsError(try sut.filter(alwaysThrowingPredicate))
+        result = nil
+        XCTAssertThrowsError(result = try sut.filter(alwaysThrowingPredicate))
+        XCTAssertNil(result)
         
         // when root is not nil and isIncluded doesn't throw,
         // then doesn't throw
-        XCTAssertNoThrow(try sut.filter(neverThrowingPredicate))
+        XCTAssertNoThrow(result = try sut.filter(neverThrowingPredicate))
+        XCTAssertNotNil(result)
         
         // Leverages on BinaryNode filter(_:) implementation
     }
@@ -976,7 +1161,7 @@ final class LLRBTreeTests: XCTestCase {
         let k = givenKeys.randomElement()!
         let newValue = givenRandomValue()
         XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
-        XCTAssertEqual(sut.value(forKey: k), newValue)
+        XCTAssertEqual(sut.getValue(forKey: k), newValue)
         XCTAssertEqual(sut.count, 1)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
@@ -991,7 +1176,7 @@ final class LLRBTreeTests: XCTestCase {
             let prevCount = sut.count
             XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
             XCTAssertEqual(sut.count, prevCount + 1)
-            XCTAssertEqual(sut.value(forKey: k), newValue)
+            XCTAssertEqual(sut.getValue(forKey: k), newValue)
             assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
         }
@@ -1020,7 +1205,7 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertFalse(executed)
         XCTAssertNotNil(sut.root)
         XCTAssertEqual(sut.count, 1)
-        XCTAssertEqual(sut.value(forKey: newKey), newValue)
+        XCTAssertEqual(sut.getValue(forKey: newKey), newValue)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
@@ -1036,7 +1221,7 @@ final class LLRBTreeTests: XCTestCase {
             executed = false
             XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
             XCTAssertEqual(sut.count, prevCount + 1)
-            XCTAssertEqual(sut.value(forKey: k), newValue)
+            XCTAssertEqual(sut.getValue(forKey: k), newValue)
             assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
         }
@@ -1046,14 +1231,14 @@ final class LLRBTreeTests: XCTestCase {
         // gets updated with combine result
         for k in sutIncludedKeys.shuffled() {
             let prevCount = sut.count
-            let prevValue = sut.value(forKey: k)!
+            let prevValue = sut.getValue(forKey: k)!
             let newValue = givenRandomValue()
             let expectedValue = try? combine(prevValue, newValue)
             executed = false
             XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
             XCTAssertEqual(sut.count, prevCount)
             XCTAssertTrue(executed)
-            XCTAssertEqual(sut.value(forKey: k), expectedValue)
+            XCTAssertEqual(sut.getValue(forKey: k), expectedValue)
             assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
         }
@@ -1085,7 +1270,7 @@ final class LLRBTreeTests: XCTestCase {
         
         // root is not nil and other is empty,
         // then doesn't rethrows and elements are same
-        other.root = nil
+        other = LLRBTree()
         let expectedElements = sut!.map { $0 }
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         assertEqualsByElements(lhs: sut, rhs: expectedElements)
@@ -1102,10 +1287,10 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         XCTAssertEqual(sut.count, prevCount + other.count)
         for otherElement in other {
-            XCTAssertEqual(sut.value(forKey: otherElement.0), otherElement.1)
+            XCTAssertEqual(sut.getValue(forKey: otherElement.0), otherElement.1)
         }
         for prevElement in prevElements {
-            XCTAssertEqual(sut.value(forKey: prevElement.0), prevElement.1)
+            XCTAssertEqual(sut.getValue(forKey: prevElement.0), prevElement.1)
         }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
@@ -1114,7 +1299,8 @@ final class LLRBTreeTests: XCTestCase {
         
         // root is not nil and other contains duplicate keys,
         // then throws
-        other.root = sut.root?.copy() as? LLRBTree<String, Int>.Node
+        let otherRoot = sut.root?.copy() as? LLRBTree<String, Int>.Node
+        other = LLRBTree(otherRoot)
         XCTAssertNotNil(other.root)
         XCTAssertThrowsError(try sut.merging(other, uniquingKeysWith: combine))
     }
@@ -1152,7 +1338,7 @@ final class LLRBTreeTests: XCTestCase {
         // any duplicate key, then combine doesn't execute
         // and elements from other get inserted
         whenRootContainsHalfGivenElements()
-        other.root = nil
+        other = LLRBTree()
         for k in sutNotIncludedKeys.shuffled() {
             other.setValue(givenRandomValue(), forKey: k)
         }
@@ -1163,10 +1349,10 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertFalse(executed)
         XCTAssertEqual(sut.count, prevCount + other.count)
         for otherElement in other {
-            XCTAssertEqual(sut.value(forKey: otherElement.0), otherElement.1)
+            XCTAssertEqual(sut.getValue(forKey: otherElement.0), otherElement.1)
         }
         for prevElement in prevElements {
-            XCTAssertEqual(sut.value(forKey: prevElement.0), prevElement.1)
+            XCTAssertEqual(sut.getValue(forKey: prevElement.0), prevElement.1)
         }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
@@ -1178,7 +1364,7 @@ final class LLRBTreeTests: XCTestCase {
         // for elements with duplicate keys combine executes and
         // its results are set for elements with duplicate keys
         whenRootContainsHalfGivenElements()
-        other.root = nil
+        other = LLRBTree()
         sutNotIncludedKeys.forEach {
             other.setValue(givenRandomValue(), forKey: $0)
         }
@@ -1195,9 +1381,9 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         XCTAssertTrue(executed)
         XCTAssertEqual(sut.count, prevCount + prevNotIncludedKeys.count)
-        prevElements.forEach { XCTAssertEqual(sut.value(forKey: $0.0), $0.1) }
-        prevNotIncludedKeys.forEach { XCTAssertEqual(sut.value(forKey: $0), other.value(forKey: $0)) }
-        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(sut.value(forKey: $0.0), $0.1) }
+        prevElements.forEach { XCTAssertEqual(sut.getValue(forKey: $0.0), $0.1) }
+        prevNotIncludedKeys.forEach { XCTAssertEqual(sut.getValue(forKey: $0), other.getValue(forKey: $0)) }
+        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(sut.getValue(forKey: $0.0), $0.1) }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
@@ -1239,12 +1425,80 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertFalse(result.root === other.root, "result.root instance is other.root")
         XCTAssertEqual(sut, prevSut)
         XCTAssertEqual(result.count, prevSut.count + prevNotIncludedKeys.count)
-        prevSut.dropFirst(3).forEach { XCTAssertEqual(result.value(forKey: $0.0), $0.1) }
-        prevNotIncludedKeys.forEach { XCTAssertEqual(result.value(forKey: $0), other.value(forKey: $0)) }
-        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.value(forKey: $0.0), $0.1) }
+        prevSut.dropFirst(3).forEach { XCTAssertEqual(result.getValue(forKey: $0.0), $0.1) }
+        prevNotIncludedKeys.forEach { XCTAssertEqual(result.getValue(forKey: $0), other.getValue(forKey: $0)) }
+        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.getValue(forKey: $0.0), $0.1) }
         if let root = result.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
+        }
+    }
+    
+    func testTreeFilter_whenIsEmpty_thenIsIncludedNeverExecutes() {
+        var hasExecuted = false
+        let isIncluded: ((key: String, value: Int)) throws -> Bool = { _ in
+            hasExecuted = true
+            throw err
+        }
+        XCTAssertTrue(sut.isEmpty)
+        var result: LLRBTree<String, Int>? = nil
+        
+        XCTAssertNoThrow(result = try sut.filter(isIncluded))
+        XCTAssertFalse(hasExecuted)
+        XCTAssertEqual(result, LLRBTree<String, Int>())
+    }
+    
+    func testTreeFilter_whenIsNotEmpty_thenIsIncludedExecutes() {
+        var hasExecuted = false
+        let isIncluded: ((key: String, value: Int)) throws -> Bool = { _ in
+            hasExecuted = true
+            throw err
+        }
+        whenRootContainsHalfGivenElements()
+        var result: LLRBTree<String, Int>? = nil
+        
+        XCTAssertThrowsError(result = try sut.filter(isIncluded))
+        XCTAssertTrue(hasExecuted)
+        XCTAssertNil(result)
+    }
+    
+    func testTreeFilter_whenIsIncludedThrows_thenRethrows() {
+        let isIncluded: ((key: String, value: Int)) throws -> Bool = {
+            _ in
+            throw err
+        }
+        whenRootContainsHalfGivenElements()
+        do {
+            let _: LLRBTree<String, Int> = try sut.filter(isIncluded)
+        } catch {
+            XCTAssertEqual(error as NSError, err)
+            return
+        }
+        
+        XCTFail("has not rethrown error")
+    }
+    
+    func testTreeFilter_whenIsIncludedDoesntThrow_thenReturnsFilteredTree() {
+        let isIncluded: ((key: String, value: Int)) throws -> Bool = {
+            $0.value % 2 == 0
+        }
+        whenRootContainsHalfGivenElements()
+        do {
+            var expectedResult = LLRBTree<String, Int>()
+            try sut.forEach { element in
+                guard
+                    try isIncluded(element)
+                else { return }
+                
+                expectedResult.setValue(element.value, forKey: element.key)
+            }
+            
+            let result: LLRBTree<String, Int> = try sut.filter(isIncluded)
+            XCTAssertEqual(result, expectedResult)
+        } catch {
+            XCTFail("isIncluded must not throw")
+            
+            return
         }
     }
     
@@ -1375,7 +1629,7 @@ final class LLRBTreeTests: XCTestCase {
         XCTAssertNil(rhs.root)
         XCTAssertNotEqual(lhs, rhs)
         
-        lhs.root = nil
+        lhs = LLRBTree()
         rhs.setValue(10, forKey: "A")
         XCTAssertNotNil(rhs.root)
         XCTAssertNotEqual(lhs, rhs)
@@ -1385,7 +1639,7 @@ final class LLRBTreeTests: XCTestCase {
             // …when roots are equal, then returns true
             whenRootContainsHalfGivenElements()
             lhs = sut
-            rhs.root = lhs.root?.copy() as? LLRBTree<String, Int>.Node
+            rhs = LLRBTree(lhs.root?.clone())
             XCTAssertEqual(lhs, rhs)
             
             // …when roots are not equal, then returns false:
@@ -1465,8 +1719,8 @@ final class LLRBTreeTests: XCTestCase {
         // when root is not nil, and other root is not nil
         // and have same elements, then
         // are considered identical by Set
-        other.root = nil
-        sut.shuffled().forEach { other.setValue($0.1, forKey: $0.0) }
+        other = LLRBTree()
+        sut.shuffled().forEach { other.setValue($0.value, forKey: $0.key) }
         assertEqualsByElements(lhs: sut.root!, rhs: other.root!)
         XCTAssertFalse(set.insert(other).inserted)
     }

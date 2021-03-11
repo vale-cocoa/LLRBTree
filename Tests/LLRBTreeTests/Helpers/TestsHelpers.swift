@@ -146,7 +146,7 @@ func assertSamePathsToMinAndToMax<Key: Comparable, Value: Equatable>(lhs: LLRBTr
     }
 }
 
-func assertEqualsByElements<Key: Comparable, Value: Equatable, LHS: Sequence, RHS: Sequence>(lhs: LHS, rhs: RHS, message: String? = nil, file: StaticString = #file, line: UInt = #line) where LHS.Iterator.Element == RHS.Iterator.Element, LHS.Iterator.Element == (Key, Value) {
+func assertEqualsByElements<Key: Comparable, Value: Equatable, LHS: Sequence, RHS: Sequence>(lhs: LHS, rhs: RHS, message: String? = nil, file: StaticString = #file, line: UInt = #line) where LHS.Iterator.Element == RHS.Iterator.Element, LHS.Iterator.Element == (key: Key, value: Value) {
     XCTAssertTrue(
         lhs.elementsEqual(rhs, by: { $0.0 == $1.0 && $0.1 == $1.1 }),
         "\(message ?? "")",
@@ -208,6 +208,27 @@ struct MYSKey: Comparable {
 
 struct MYSValue: Equatable {
     var v: Int
+}
+
+// MARK: - Sequence of Key-Value pairs for tests
+struct Seq<Element>: Sequence {
+    var elements: [Element]
+    
+    var ucIsZero = true
+    
+    
+    init(_ elements: [Element]) {
+        self.elements = elements
+    }
+    
+    var underestimatedCount: Int {
+        ucIsZero ? 0 : elements.count / 2
+    }
+    
+    func makeIterator() -> AnyIterator<Element> {
+        AnyIterator(elements.makeIterator())
+    }
+    
 }
 
 // MARK: - GIVEN

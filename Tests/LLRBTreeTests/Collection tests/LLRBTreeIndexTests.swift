@@ -99,6 +99,35 @@ final class LLRBTReeIndexTests: XCTestCase {
         XCTAssertTrue(sut.path.isEmpty, "path on endIndex should be empty")
     }
     
+    func testInitAsIndexOfKeyFor() {
+        // when tree is empty
+        var tree = _Tree()
+        sut = _Index(asIndexOfKey: givenKeys.randomElement()!, for: tree)
+        XCTAssertTrue(sut.id === tree.id, "set a different id")
+        XCTAssertNil(sut.root)
+        XCTAssertTrue(sut.path.isEmpty)
+        
+        // when tree is not empty, and key is in tree
+        tree = givenFullTree()
+        for key in givenKeys {
+            sut = _Index(asIndexOfKey: key, for: tree)
+            XCTAssertTrue(sut.id === tree.id, "set a different id")
+            XCTAssertTrue(sut.root?.node === tree.root, "set a different root")
+            XCTAssertFalse(sut.path.isEmpty)
+            XCTAssertEqual(sut.path.last?.node.element.key, key)
+            XCTAssertEqual(sut.path.last?.node.element.value, tree[key])
+        }
+        
+        // when tree is not empty and key is not in tree
+        for _ in 0..<10 {
+            let notContainedKey = givenKeys.randomElement()! + givenKeys.randomElement()!
+            sut = _Index(asIndexOfKey: notContainedKey, for: tree)
+            XCTAssertTrue(sut.id === tree.id, "set a different id")
+            XCTAssertTrue(sut.root?.node === tree.root, "set a different root")
+            XCTAssertTrue(sut.path.isEmpty)
+        }
+    }
+    
     // MARK: - isValid(for:) tests
     func testIsValidFor() {
         // returns tree.id === id result
@@ -139,7 +168,7 @@ final class LLRBTReeIndexTests: XCTestCase {
         
         // path.isEmpty == false, then path's last node is next element:
         sut = _Index(asStartIndexOf: tree)
-        let treeIterator = tree.makeIterator()
+        var treeIterator = tree.makeIterator()
         while let nextTreeElement = treeIterator.next() {
             XCTAssertEqual(sut.path.last?.node.key, nextTreeElement.0)
             XCTAssertEqual(sut.path.last?.node.value, nextTreeElement.1)
