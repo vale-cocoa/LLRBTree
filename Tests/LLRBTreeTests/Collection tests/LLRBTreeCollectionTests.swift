@@ -46,6 +46,30 @@ final class LLRBTreeCollectionTests: BaseLLRBTreeTestCase {
     }
     
     // MARK: - Tests
+    // MARK: - count tests
+    func testCount() {
+        // when root == nil, then returns 0
+        whenIsEmpty()
+        XCTAssertNil(sut.root)
+        XCTAssertEqual(sut.count, 0)
+        
+        // when root != nil, then returns root.count
+        whenRootContainsAllGivenElements()
+        XCTAssertEqual(sut.count, sut.root?.count)
+    }
+    
+    // MARK: - isEmpty tests
+    func testIsEmpty() {
+        // when root == nil, then returns true
+        whenIsEmpty()
+        XCTAssertNil(sut.root)
+        XCTAssertTrue(sut.isEmpty)
+        
+        // when root != nil, then returns false
+        whenRootContainsAllGivenElements()
+        XCTAssertFalse(sut.isEmpty)
+    }
+    
     // MARK: - startIndex tests
     func testStartIndex() {
         // when isEmpty == true,
