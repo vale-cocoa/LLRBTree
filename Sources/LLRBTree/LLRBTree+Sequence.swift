@@ -31,6 +31,7 @@ import Foundation
 extension LLRBTree: Sequence {
     public typealias Element = (key: Key, value: Value)
     
+    /// An iterator over the members of a `LLRBTree<Key, Value>`.
     public struct Iterator: IteratorProtocol {
         private var rootIterator: LLRBTree.Node.Iterator?
         
