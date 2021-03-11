@@ -636,12 +636,12 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
             return "\(value)"
         }
         whenRootContainsAllGivenElements()
-        sut.setValue(1000, forKey: "Z")
+        sut.updateValue(1000, forKey: "Z")
         // when tranform throws, then rethows
         XCTAssertThrowsError(try sut.compactMapValues(throwingTransform))
         
         // when transform doesn't throw, then doesn't throw
-        sut.setValue(999, forKey: "Z")
+        sut.updateValue(999, forKey: "Z")
         XCTAssertNoThrow(try sut.compactMapValues(throwingTransform))
         
         // returns a LLRBTree instance with elements for which
@@ -664,98 +664,6 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         }
     }
     
-    func testSetValueForKeyUniquingKeysWith_whenCombineThrows() {
-        let combine: (Int, Int) throws -> Int = { _, _ in
-            throw err
-        }
-        // root is nil, then doesn't throw and adds new element
-        XCTAssertNil(sut.root)
-        let k = givenKeys.randomElement()!
-        let newValue = givenRandomValue()
-        XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
-        XCTAssertEqual(sut.getValue(forKey: k), newValue)
-        XCTAssertEqual(sut.count, 1)
-        if let root = sut.root {
-            assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
-        }
-        
-        // root is not nil, forKey is not in root,
-        // then doesn't throw and adds new element
-        whenRootContainsHalfGivenElements()
-        for k in sutNotIncludedKeys.shuffled() {
-            let newValue = givenRandomValue()
-            let prevCount = sut.count
-            XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
-            XCTAssertEqual(sut.count, prevCount + 1)
-            XCTAssertEqual(sut.getValue(forKey: k), newValue)
-            assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
-        }
-        
-        // root is not nil and forKey is in tree,
-        // then rethrows
-        for k in sutIncludedKeys.shuffled() {
-            let newValue = givenRandomValue()
-            XCTAssertThrowsError(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
-        }
-    }
-    
-    func testSetValueForKeyUniquingKeysWith_whenCombineDoesntThrow() {
-        var executed: Bool = false
-        let combine: (Int, Int) throws -> Int = { prev, next in
-            executed = true
-            return prev + next
-        }
-        
-        // root is nil, then combine never gets executed
-        // and adds new element
-        XCTAssertNil(sut.root)
-        let newKey = givenKeys.randomElement()!
-        let newValue = givenRandomValue()
-        XCTAssertNoThrow(try sut.setValue(newValue, forKey: newKey, uniquingKeysWith: combine))
-        XCTAssertFalse(executed)
-        XCTAssertNotNil(sut.root)
-        XCTAssertEqual(sut.count, 1)
-        XCTAssertEqual(sut.getValue(forKey: newKey), newValue)
-        if let root = sut.root {
-            assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
-        }
-        
-        // root is not nil
-        whenRootContainsHalfGivenElements()
-        // forKey is not contained in tree,
-        // then combine never executes and new element is added
-        for k in sutNotIncludedKeys.shuffled() {
-            let newValue = givenRandomValue()
-            let prevCount = sut.count
-            executed = false
-            XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
-            XCTAssertEqual(sut.count, prevCount + 1)
-            XCTAssertEqual(sut.getValue(forKey: k), newValue)
-            assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
-        }
-        
-        // forKey is contained,
-        // then combine gets executed, element with that key
-        // gets updated with combine result
-        for k in sutIncludedKeys.shuffled() {
-            let prevCount = sut.count
-            let prevValue = sut.getValue(forKey: k)!
-            let newValue = givenRandomValue()
-            let expectedValue = try? combine(prevValue, newValue)
-            executed = false
-            XCTAssertNoThrow(try sut.setValue(newValue, forKey: k, uniquingKeysWith: combine))
-            XCTAssertEqual(sut.count, prevCount)
-            XCTAssertTrue(executed)
-            XCTAssertEqual(sut.getValue(forKey: k), expectedValue)
-            assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
-        }
-    }
-    
     func testMergeUniquingKeysWith_whenCombineThrows() {
         var other = LLRBTree<String, Int>()
         let combine: (Int, Int) throws -> Int = { _, _ in
@@ -771,7 +679,7 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         // root is nil and other is not empty,
         // then doesn't rethrows and elements from other are
         // inserted
-        givenKeys.forEach { other.setValue(givenRandomValue(), forKey: $0) }
+        givenKeys.forEach { other.updateValue(givenRandomValue(), forKey: $0) }
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         XCTAssertNotNil(sut.root)
         assertEqualsByElements(lhs: sut, rhs: other)
@@ -792,7 +700,7 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         // from other get inserted
         whenRootContainsHalfGivenElements()
         for k in sutNotIncludedKeys.shuffled() {
-            other.setValue(givenRandomValue(), forKey: k)
+            other.updateValue(givenRandomValue(), forKey: k)
         }
         let prevCount = sut.count
         let prevElements = sut!.map { $0 }
@@ -836,7 +744,7 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         // then combine doesn't execute and other's elements get
         // inserted
         executed = false
-        givenKeys.forEach { other.setValue(givenRandomValue(), forKey: $0) }
+        givenKeys.forEach { other.updateValue(givenRandomValue(), forKey: $0) }
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         XCTAssertFalse(executed)
         XCTAssertNotNil(sut.root)
@@ -852,7 +760,7 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         whenRootContainsHalfGivenElements()
         other = LLRBTree()
         for k in sutNotIncludedKeys.shuffled() {
-            other.setValue(givenRandomValue(), forKey: k)
+            other.updateValue(givenRandomValue(), forKey: k)
         }
         var prevCount = sut.count
         var prevElements = sut!.map { $0 }
@@ -878,12 +786,12 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         whenRootContainsHalfGivenElements()
         other = LLRBTree()
         sutNotIncludedKeys.forEach {
-            other.setValue(givenRandomValue(), forKey: $0)
+            other.updateValue(givenRandomValue(), forKey: $0)
         }
         let elementsWithDuplicateKeys = sut
             .prefix(3)
-            .map { ($0.0, givenRandomValue()) }
-        elementsWithDuplicateKeys.forEach { other.setValue($0.1, forKey: $0.0) }
+            .map { ($0.key, givenRandomValue()) }
+        elementsWithDuplicateKeys.forEach { other.updateValue($0.1, forKey: $0.0) }
         let expectedResultForDuplicateKeys = zip(sut.prefix(3), elementsWithDuplicateKeys)
             .map { ($0.0.0, try! combine($0.0.1, $0.1.1)) }
         executed = false
@@ -919,12 +827,12 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         whenRootContainsHalfGivenElements()
         var other = LLRBTree<String, Int>()
         sutNotIncludedKeys.forEach {
-            other.setValue(givenRandomValue(), forKey: $0)
+            other.updateValue(givenRandomValue(), forKey: $0)
         }
         let elementsWithDuplicateKeys = sut
             .prefix(3)
             .map { ($0.0, givenRandomValue()) }
-        elementsWithDuplicateKeys.forEach { other.setValue($0.1, forKey: $0.0) }
+        elementsWithDuplicateKeys.forEach { other.updateValue($0.1, forKey: $0.0) }
         let expectedResultForDuplicateKeys = zip(sut.prefix(3), elementsWithDuplicateKeys)
             .map { ($0.0.0, try! combine($0.0.1, $0.1.1)) }
         executed = false
@@ -1002,7 +910,7 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
                     try isIncluded(element)
                 else { return }
                 
-                expectedResult.setValue(element.value, forKey: element.key)
+                expectedResult.updateValue(element.value, forKey: element.key)
             }
             
             let result: LLRBTree<String, Int> = try sut.filter(isIncluded)

@@ -58,7 +58,7 @@ final class LLRBTReeIndexTests: XCTestCase {
         var tree = _Tree()
         givenKeys
             .shuffled()
-            .forEach { tree.setValue(givenRandomValue(), forKey: $0) }
+            .forEach { tree.updateValue(givenRandomValue(), forKey: $0) }
         
         return tree
     }

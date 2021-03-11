@@ -47,13 +47,13 @@ final class LLRBTreeHashableTests: BaseLLRBTreeTestCase {
         
         // when either root is nil and other's root is not nil,
         // then returns false
-        lhs.setValue(10, forKey: "A")
+        lhs.updateValue(10, forKey: "A")
         XCTAssertNotNil(lhs.root)
         XCTAssertNil(rhs.root)
         XCTAssertNotEqual(lhs, rhs)
         
         lhs = LLRBTree()
-        rhs.setValue(10, forKey: "A")
+        rhs.updateValue(10, forKey: "A")
         XCTAssertNotNil(rhs.root)
         XCTAssertNotEqual(lhs, rhs)
         
@@ -99,7 +99,7 @@ final class LLRBTreeHashableTests: BaseLLRBTreeTestCase {
         // and have same elements, then
         // are considered identical by Set
         other = LLRBTree()
-        sut.shuffled().forEach { other.setValue($0.value, forKey: $0.key) }
+        sut.shuffled().forEach { other.updateValue($0.value, forKey: $0.key) }
         assertEqualsByElements(lhs: sut.root!, rhs: other.root!)
         XCTAssertFalse(set.insert(other).inserted)
     }
