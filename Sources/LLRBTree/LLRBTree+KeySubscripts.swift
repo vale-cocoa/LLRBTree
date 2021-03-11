@@ -29,32 +29,51 @@
 import Foundation
 
 extension LLRBTree {
-    /// Access elements' values stored in this tree, via keys subscription.
+    /// Accesses the value associated with the given key for reading and writing.
     ///
-    /// - Parameter key: The key of the element to access.
-    /// - Returns:  The value stored for the given key,
-    ///             or `nil` if such key is not present.
-    /// - Note: The subscript can be used to update, insert or delete an element:
-    ///         ```
-    ///         var tree = LLRBTree<String, Int>()
-    ///         tree["A"] = 1
-    ///         // ("A", 1) is inserted in tree
+    /// This *key-based* subscript returns the value for the given key if the key
+    /// is found in the tree, or `nil` if the key is not found.
+    /// The setter of this subscript will invalidate indices of the tree previously stored.
     ///
-    ///         print("\(tree["A"] ?? "nil")")
-    ///         // prints 1
+    /// The following example creates a new tree and prints the value of a
+    /// key found in the tree (`"Coral"`) and a key not found in the
+    /// tree (`"Cerise"`).
     ///
-    ///         tree["A"] = 3
-    ///         // element with key "A" get its value updated to 3
+    ///     var hues: LLRBTree<String, Int> = ["Heliotrope": 296, "Coral": 16, "Aquamarine": 156]
+    ///     print(hues["Coral"])
+    ///     // Prints "Optional(16)"
+    ///     print(hues["Cerise"])
+    ///     // Prints "nil"
     ///
-    ///         print("\(tree["A"] ?? "nil")")
-    ///         // prints 3
+    /// When you assign a value for a key and that key already exists, the
+    /// tree overwrites the existing value. If the tree doesn't
+    /// contain the key, the key and value are added as a new key-value pair.
     ///
-    ///         tree["A"] = nil
-    ///         // removes the element with key "A"
+    /// Here, the value for the key `"Coral"` is updated from `16` to `18` and a
+    /// new key-value pair is added for the key `"Cerise"`.
     ///
-    ///         print("\(tree["A"] ?? "nil")")
-    ///         // prints nil
-    ///         ```
+    ///     hues["Coral"] = 18
+    ///     print(hues["Coral"])
+    ///     // Prints "Optional(18)"
+    ///
+    ///     hues["Cerise"] = 330
+    ///     print(hues["Cerise"])
+    ///     // Prints "Optional(330)"
+    ///
+    /// If you assign `nil` as the value for the given key, the tree
+    /// removes that key and its associated value.
+    ///
+    /// In the following example, the key-value pair for the key `"Aquamarine"`
+    /// is removed from the tree by assigning `nil` to the key-based
+    /// subscript.
+    ///
+    ///     hues["Aquamarine"] = nil
+    ///     print(hues)
+    ///     // Prints "["Coral": 18, "Heliotrope": 296, "Cerise": 330]"
+    ///
+    /// - Parameter key: The key to find in the tree.
+    /// - Returns:  The value associated with `key` if `key` is in the tree;
+    ///             otherwise, `nil`.
     /// - Complexity:   Amortized O(log *n*) where *n* is
     ///                 the lenght of this tree.
     public subscript(key: Key) -> Value? {
@@ -77,7 +96,7 @@ extension LLRBTree {
     ///
     /// Use this subscript when you want either the value for a particular key
     /// or, when that key is not present in the hash table, a default value.
-    /// The setter of this subscript invalidates all indices of the tree.
+    /// The setter of this subscript invalidates indices of the tree previously stored.
     /// This example uses the subscript with a message to use in case an HTTP response
     /// code isn't recognized:
     ///
@@ -115,7 +134,7 @@ extension LLRBTree {
     /// incremented, and then added to the tree under that key.
     ///
     /// - Note: Do not use this subscript to modify tree values if the
-    ///   dictionary's `Value` type is a class. In that case, the default value
+    ///   tree's `Value` type is a class. In that case, the default value
     ///   and key are not written back to the tree after an operation.
     ///
     /// - Parameters:
