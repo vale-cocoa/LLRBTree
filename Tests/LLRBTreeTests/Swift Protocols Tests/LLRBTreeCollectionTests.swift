@@ -312,29 +312,7 @@ final class LLRBTreeCollectionTests: BaseLLRBTreeTestCase {
         }
     }
     
-    // MARK: - keys tests
-    func testKeys() {
-        // when is empty, then keys is empty too
-        sut = LLRBTree()
-        XCTAssertTrue(sut.keys.isEmpty)
-        
-        // when is not empty, then keys is not empty and contains
-        // all keys in same order
-        whenRootContainsHalfGivenElements()
-        XCTAssertFalse(sut.keys.isEmpty)
-        XCTAssertTrue(sut.keys.indices.elementsEqual(sut.indices, by: { sut.keys[$0] == sut[$1].key }), "keys doesn't contains same keys in the same order")
-    }
     
-    func testKeys_copyOnWrite() {
-        // when storing keys and then changing hash table keys,
-        // then stored keys is different
-        whenRootContainsHalfGivenElements()
-        let storedKeys = sut.keys
-        for key in sutNotIncludedKeys {
-            sut[key] = givenRandomValue()
-            XCTAssertNotEqual(storedKeys, sut.keys)
-        }
-    }
     
     // MARK: - values tests
     func testValues_getter() {

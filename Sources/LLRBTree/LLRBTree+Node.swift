@@ -515,3 +515,28 @@ extension LLRBTree.Node {
     }
     
 }
+
+// MARK: - filtering
+extension LLRBTree.Node {
+    func filtering(_ isIncluded: (Element) throws -> Bool) rethrows -> LLRBTree.Node? {
+        if left == nil && right == nil {
+            guard
+                try isIncluded(element)
+            else { return nil }
+        } else {
+            if left != nil {
+                if !hasRedLeftChild && !hasRedLeftGrandChild {
+                    moveRedLeft()
+                }
+                left = try left?.filtering(isIncluded)
+                fixUp()
+            }
+            
+            
+        }
+        fixUp()
+        
+        return self
+    }
+    
+}

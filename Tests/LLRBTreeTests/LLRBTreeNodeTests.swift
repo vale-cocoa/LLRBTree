@@ -1784,4 +1784,46 @@ final class LLRBTreeNodeTests: XCTestCase {
         }
     }
     
+    // MARK: - filtering(_:) tests
+    func testFiltering_whenIsIncludedThrows_thenRethrows() {
+        whenBalancedTreeWithHalfGivenKeys()
+        XCTAssertThrowsError(try sut.filtering(alwaysThrowingPredicate))
+    }
+    
+    func testFiltering_whenIsIncludedDoesntThrow_thenDoesntThrow() {
+        whenBalancedTreeWithHalfGivenKeys()
+        XCTAssertNoThrow(try sut.filtering(neverThrowingPredicate))
+    }
+    
+    func testFiltering_whenIsIncludedReturnsFalseForEveryElement_thenReturnsNil() {
+        whenBalancedTreeWithHalfGivenKeys()
+        XCTAssertNil(sut.filtering({ _ in return false }))
+    }
+    
+    func testFiltering_whenIsIncludedReturnsTrueForEveryElement_thenReturnsEquivalentTreeAndInvariantsHoldTrue() {
+        whenBalancedTreeWithHalfGivenKeys()
+        let expectedResult = sut.clone()
+        sut = sut.filtering({ _ in return true })
+        sut.color = .black
+        XCTAssertEqual(sut.count, expectedResult.count)
+        for expectedElement in expectedResult {
+            XCTAssertEqual(sut.getValue(forKey: expectedElement.key), expectedElement.value)
+        }
+        assertLeftLeaningRedBlackTreeInvariants(root: sut)
+        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+    }
+    
+    func testFiltering_whenIsIncludedReturnsTrueForSomeElements_thenReturnsTreeWithIncludedElementsOnlyAndInvariantsHoldTrue() {
+        whenBalancedTreeWithHalfGivenKeys()
+        let expectedResult = sut.filter({ $0.value % 2 == 0 })
+        sut = sut.filtering({ $0.value % 2 == 0 })
+        sut?.color = .black
+        XCTAssertEqual(sut?.count ?? 0, expectedResult.count)
+        for expectedElement in expectedResult {
+            XCTAssertEqual(sut?.getValue(forKey: expectedElement.key), expectedElement.value)
+        }
+        assertLeftLeaningRedBlackTreeInvariants(root: sut)
+        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+    }
+    
 }

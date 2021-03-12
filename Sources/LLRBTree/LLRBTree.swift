@@ -53,13 +53,13 @@ public struct LLRBTree<Key: Comparable, Value> {
     public init() { }
     
     // MARK: - Internal initializers
+    init(_ root: LLRBTree.Node?) {
+        self.root = root
+    }
+    
     init(_ other: LLRBTree) {
         self.id = other.id
         self.root = other.root
-    }
-    
-    init(_ root: LLRBTree.Node?) {
-        self.root = root
     }
     
     // MARK: - Copy On Write and ID helpers
