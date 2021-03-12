@@ -97,6 +97,22 @@ final class LLRBTreeCRUDTests: BaseLLRBTreeTestCase {
         }
     }
     
+    func testUpdateValueForKey_copyOnWrite() {
+        // when root is nil, then clone's root stills nil:
+        XCTAssertNil(sut.root)
+        var clone = sut!
+        sut.updateValue(10, forKey: "A")
+        XCTAssertNil(clone.root)
+        
+        // when root is not nil, then sut.root gets copied
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        weak var prevCloneRoot = clone.root
+        sut.updateValue(1000, forKey: givenKeys.randomElement()!)
+        XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+    }
+    
     // MARK: - removeValue(forKey:) tests
     func testRemoveValueForKey_whenIsEmpty_thenReturnsNil() {
         XCTAssertTrue(sut.isEmpty)
@@ -147,6 +163,31 @@ final class LLRBTreeCRUDTests: BaseLLRBTreeTestCase {
         }
     }
     
+    func testRemoveValueForKey_copyOnWrite() {
+        // when root is nil, then clone's root stills nil
+        XCTAssertNil(sut.root)
+        var clone = sut!
+        sut.removeValueForMinKey()
+        XCTAssertNil(clone.root)
+        
+        // when root is not nil and forKey is not included,
+        // then sut.root gets copied
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        weak var prevCloneRoot = clone.root
+        sut.removeValue(forKey: sutNotIncludedKeys.randomElement()!)
+        XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+        
+        // when root is not nil and forKey is included
+        // then sut.root gets copied
+        clone = sut!
+        prevCloneRoot = clone.root
+        sut.removeValue(forKey: sutIncludedKeys.randomElement()!)
+        XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+    }
+    
     // MARK: - remove value for minKey and maxKey
     func testRemoveValueForMinKey() {
         // when root is nil, nothing happens and returns nil
@@ -175,6 +216,22 @@ final class LLRBTreeCRUDTests: BaseLLRBTreeTestCase {
         XCTAssertNil(sut.root, "root is not nil after all its elements have been removed")
     }
     
+    func testRemoveValueForMinKey_copyOnWrite() {
+        // when root is nil, then clone's root stills nil
+        XCTAssertNil(sut.root)
+        var clone = sut!
+        sut.removeValueForMinKey()
+        XCTAssertNil(clone.root)
+        
+        // when root is not nil, then sut.root gets copied
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        weak var prevCloneRoot = clone.root
+        sut.removeValueForMinKey()
+        XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+    }
+    
     func testRemoveValueForMaxKey() {
         // when root is nil, nothing happens and returns nil
         XCTAssertNil(sut.root)
@@ -200,6 +257,22 @@ final class LLRBTreeCRUDTests: BaseLLRBTreeTestCase {
             XCTAssertTrue(sut.rootIsBlack)
         }
         XCTAssertNil(sut.root, "root is not nil after all its elements have been removed")
+    }
+    
+    func testRemoveValueForMaxKey_copyOnWrite() {
+        // when root is nil, then clone's root stills nil
+        XCTAssertNil(sut.root)
+        var clone = sut!
+        sut.removeValueForMaxKey()
+        XCTAssertNil(clone.root)
+        
+        // when root is not nil, then sut.root gets copied
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        weak var prevCloneRoot = clone.root
+        sut.removeValueForMinKey()
+        XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
     }
     
     // MARK: - removeAll() test

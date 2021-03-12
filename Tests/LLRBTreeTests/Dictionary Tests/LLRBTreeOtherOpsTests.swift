@@ -281,6 +281,34 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         }
     }
     
+    func testMergeUniquingKeysWith_copyOnWrite() {
+        // when root is nil and merge adds elements, then clone's root stills nil
+        XCTAssertNil(sut.root)
+        var clone = sut!
+        sut.merge(givenElements(), uniquingKeysWith: {_, next in
+            return next
+        })
+        XCTAssertNil(clone.root)
+        
+        // when root is not nil and merge doesn't
+        // add new elements, then sut.root doesn't change
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        weak var prevCloneRoot = clone.root
+        sut.merge([], uniquingKeysWith: {_, next in next})
+        XCTAssertTrue(sut.root === clone.root, "sut.root should be the same instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+        
+        // when root is not nil and merge adds new elements,
+        // then sut.root gets copied
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        prevCloneRoot = clone.root
+        sut.merge(givenElements(), uniquingKeysWith: {_, next in return next })
+        XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+    }
+    
     func testMergingUniquingKeysWith() {
         // Since this method wraps around
         // merge(_:,uniquingKeysWith:) we are just gonna tests

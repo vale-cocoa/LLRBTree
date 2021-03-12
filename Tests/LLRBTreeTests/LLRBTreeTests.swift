@@ -108,5 +108,17 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         XCTAssertFalse(sut.id === prevID, "has not changed id reference")
     }
     
+    func testInvalidateIndicies_makesPreviouslyStoredIndicesInvalidForThisTree() {
+        whenRootContainsAllGivenElements()
+        let previousIndices = sut.indices
+        let previousEndIndex = sut.endIndex
+        
+        sut.invalidateIndices()
+        XCTAssertFalse(previousEndIndex.isValidFor(tree: sut))
+        for idx in previousIndices {
+            XCTAssertFalse(idx.isValidFor(tree: sut))
+        }
+    }
+    
 }
 
