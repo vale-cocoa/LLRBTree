@@ -201,6 +201,7 @@ extension LLRBTree.Node: Sequence {
     
     struct Iterator: IteratorProtocol {
         private var stack = [WrappedNode<LLRBTree.Node>]()
+        
         private var node: WrappedNode<LLRBTree.Node>?
         
         init(_ node: LLRBTree.Node) {
@@ -218,7 +219,7 @@ extension LLRBTree.Node: Sequence {
             else { return nil }
             
             defer {
-                self.node = withExtendedLifetime(current.node) { current.wrappedRight }
+                self.node = current.wrappedRight
             }
             
             return current.node.element
@@ -228,9 +229,7 @@ extension LLRBTree.Node: Sequence {
     
     var underestimatedCount: Int { count }
     
-    func makeIterator() -> Iterator {
-        Iterator(self)
-    }
+    func makeIterator() -> Iterator { Iterator(self) }
     
 }
 
@@ -518,25 +517,22 @@ extension LLRBTree.Node {
 
 // MARK: - filtering
 extension LLRBTree.Node {
-    func filtering(_ isIncluded: (Element) throws -> Bool) rethrows -> LLRBTree.Node? {
-        if left == nil && right == nil {
+    func filtered(_ isIncluded: (Element) throws -> Bool) rethrows -> LLRBTree.Node? {
+        var result: LLRBTree.Node? = nil
+        for candidate in self where try isIncluded(candidate) {
             guard
-                try isIncluded(element)
-            else { return nil }
-        } else {
-            if left != nil {
-                if !hasRedLeftChild && !hasRedLeftGrandChild {
-                    moveRedLeft()
-                }
-                left = try left?.filtering(isIncluded)
-                fixUp()
+                let r = result
+            else {
+                result = LLRBTree.Node(key: candidate.key, value: candidate.value, color: .black)
+                
+                continue
             }
             
-            
+            r.updateValue(candidate.value, forKey: candidate.key)
+            r.color = .black
         }
-        fixUp()
         
-        return self
+        return result
     }
     
 }

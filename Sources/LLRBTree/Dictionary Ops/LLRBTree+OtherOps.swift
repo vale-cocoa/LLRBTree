@@ -334,27 +334,9 @@ extension LLRBTree {
     ///                         should be included in the returned tree.
     /// - Returns: A tree of the key-value pairs that `isIncluded` allows.
     public func filter(_ isIncluded: (Element) throws -> Bool) rethrows -> LLRBTree {
-        guard !self.isEmpty else { return LLRBTree() }
+        let filteredRoot = try root?.filtered(isIncluded)
         
-        var filteredRoot: LLRBTree.Node? = nil
-        for element in self.root! where try isIncluded(element) == true
-        {
-            guard
-                filteredRoot != nil
-            else {
-                filteredRoot = LLRBTree.Node(key: element.key, value: element.value, color: .black)
-                
-                continue
-            }
-            
-            filteredRoot!.setValue(element.value, forKey: element.key)
-            filteredRoot!.color = .black
-        }
-        
-        var filtered = LLRBTree()
-        filtered.root = filteredRoot
-        
-        return filtered
+        return LLRBTree(filteredRoot)
     }
     
 }
