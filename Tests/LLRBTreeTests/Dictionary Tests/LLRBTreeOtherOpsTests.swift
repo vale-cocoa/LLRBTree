@@ -536,7 +536,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         }
         
         // root is not nil, other is not empty and contains
-        // duplicate keys, then other elemnts get inserted and
+        // duplicate keys, then other elements get inserted and
         // for elements with duplicate keys combine executes and
         // its results are set for elements with duplicate keys
         whenRootContainsHalfGivenElements()
@@ -634,7 +634,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         XCTAssertEqual(result.count, prevSut.count + prevNotIncludedKeys.count)
         prevSut.dropFirst(3).forEach { XCTAssertEqual(result.getValue(forKey: $0.key), $0.value) }
         prevNotIncludedKeys.forEach { XCTAssertEqual(result.getValue(forKey: $0), other.getValue(forKey: $0)) }
-        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.getValue(forKey: $0.key), $0.value) }
+        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.getValue(forKey: $0.0), $0.1) }
         if let root = result.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
