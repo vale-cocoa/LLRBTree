@@ -190,7 +190,10 @@ extension LLRBTree {
         guard
             !self.isEmpty
         else {
-            self = try .init(other, uniquingKeysWith: combine)
+            let new = try LLRBTree.init(other, uniquingKeysWith: combine)
+            if new.root != nil {
+                self = new
+            }
             
             return
         }

@@ -135,7 +135,291 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
     }
     
     // MARK: - Merge operations tests
-    func testMergeUniquingKeysWith_whenCombineThrows() {
+    func testMergeSequenceUniquingKeysWith_whenIsEmptyAndOtherDoesntContainDuplicateKeys_thenCombineNeverGetsCalledAndElementsAreAddedFromOther() {
+        var hasExecuted = false
+        let combine: (Int, Int) throws -> Int = { _, _ in
+            hasExecuted = true
+            throw err
+        }
+        whenIsEmpty()
+        // other implements withContiguousStorageIfAvailable
+        
+        // other is empty
+        XCTAssertNoThrow(try sut.merge([], uniquingKeysWith: combine))
+        XCTAssertFalse(hasExecuted)
+        XCTAssertTrue(sut.isEmpty)
+        
+        // other is not empty
+        whenIsEmpty()
+        hasExecuted = false
+        let otherArr = givenElements()
+        XCTAssertNoThrow(try sut.merge(otherArr, uniquingKeysWith: combine))
+        XCTAssertFalse(hasExecuted)
+        if otherArr.count == sut.count {
+            for (key, value) in otherArr {
+                XCTAssertEqual(sut[key], value)
+            }
+        } else {
+            XCTFail("elements are not the same amount from other: sut.count: \(sut.count) - other.count: \(otherArr.count)")
+        }
+        
+        // other doesn't implement withContiguousStorageIfAvailable
+        // other is empty
+        whenIsEmpty()
+        var other = Seq<(key: String, value: Int)>([])
+        hasExecuted = false
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertFalse(hasExecuted)
+        XCTAssertTrue(sut.isEmpty)
+        
+        // other is not empty
+        whenIsEmpty()
+        other = Seq(otherArr)
+        hasExecuted = false
+        XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
+        XCTAssertFalse(hasExecuted)
+        if otherArr.count == sut.count {
+            for (key, value) in otherArr {
+                XCTAssertEqual(sut[key], value)
+            }
+        } else {
+            XCTFail("elements are not the same amount from other: sut.count: \(sut.count) - other.count: \(otherArr.count)")
+        }
+    }
+    
+    func testMergeSequenceUniquingKeysWith_whenIsEmptyAndOtherContainsDuplicateKeys_thenCombineExecutes() {
+        var hasExecuted = false
+        let combine: (Int, Int) -> Int = { _, last in
+            hasExecuted = true
+            
+            return last
+        }
+        whenIsEmpty()
+        // other implements withContiguousStorageIfAvailable
+        let otherArr = givenElements() + givenElements()
+        sut.merge(otherArr, uniquingKeysWith: combine)
+        XCTAssertTrue(hasExecuted)
+        
+        // other implements withContiguousStorageIfAvailable
+        whenIsEmpty()
+        let other = Seq(otherArr)
+        hasExecuted = false
+        sut.merge(other, uniquingKeysWith: combine)
+        XCTAssertTrue(hasExecuted)
+    }
+    
+    func testMergeSequenceUniquingKeysWith_whenNoDuplicateKeys_thenCombineNeverGetsExecuted() {
+        var hasExecuted = false
+        let combine: (Int, Int) -> Int = { _, last in
+            hasExecuted = true
+            
+            return last
+        }
+        whenRootContainsHalfGivenElements()
+        var otherArr = givenElements().filter { !sutIncludedKeys.contains($0.key) }
+        sut.merge(otherArr, uniquingKeysWith: combine)
+        XCTAssertFalse(hasExecuted)
+        
+        // other doesn't implement withContiguousStorageIfAvailable
+        whenRootContainsHalfGivenElements()
+        otherArr = givenElements().filter { !sutIncludedKeys.contains($0.key) }
+        let other = Seq(otherArr)
+        hasExecuted = false
+        sut.merge(other, uniquingKeysWith: combine)
+        XCTAssertFalse(hasExecuted)
+    }
+    
+    func testMergeSequenceUniquingKeysWith_whenDuplicateKeys_thenCombineExecutes() {
+        var hasExecuted = false
+        let combine: (Int, Int) -> Int = { _, last in
+            hasExecuted = true
+            
+            return last
+        }
+        // other contains keys in sut
+        whenRootContainsHalfGivenElements()
+        var otherArr = givenElements()
+        sut.merge(otherArr, uniquingKeysWith: combine)
+        XCTAssertTrue(hasExecuted)
+        
+        // other doesn't implement withContiguousStorageIfAvailable
+        whenRootContainsHalfGivenElements()
+        var other = Seq(otherArr)
+        hasExecuted = false
+        sut.merge(other, uniquingKeysWith: combine)
+        XCTAssertTrue(hasExecuted)
+        
+        // other doesn't contain keys in sut but has duplicate keys
+        whenRootContainsHalfGivenElements()
+        otherArr = givenElements().filter { !sutIncludedKeys.contains($0.key) }
+        otherArr = (otherArr + otherArr)
+        otherArr.shuffle()
+        hasExecuted = false
+        sut.merge(otherArr, uniquingKeysWith: combine)
+        XCTAssertTrue(hasExecuted)
+        
+        // other doesn't implement withContiguousStorageIfAvailable
+        whenRootContainsHalfGivenElements()
+        otherArr = givenElements().filter { !sutIncludedKeys.contains($0.key) }
+        otherArr = (otherArr + otherArr)
+        otherArr.shuffle()
+        other = Seq(otherArr)
+        hasExecuted = false
+        sut.merge(otherArr, uniquingKeysWith: combine)
+        XCTAssertTrue(hasExecuted)
+    }
+    
+    func testMergeSequenceUniquingKeysWith_whenCombineThrows_thenRethrows() {
+        let combine: (Int, Int) throws -> Int = { _, _ in
+            throw err
+        }
+        whenRootContainsHalfGivenElements()
+        do {
+            try sut.merge(givenElements(), uniquingKeysWith: combine)
+            XCTFail("has not thrown error")
+        } catch {
+            XCTAssertEqual(error as NSError, err)
+        }
+        
+        // other doesn't implement withContiguousStorageIfAvailable
+        whenRootContainsHalfGivenElements()
+        let other = Seq(givenElements())
+        do {
+            try sut.merge(other, uniquingKeysWith: combine)
+            XCTFail("has not thrown error")
+        } catch {
+            XCTAssertEqual(error as NSError, err)
+        }
+    }
+    
+    func testMergeSequenceUniquingKeysWith_whenDuplicateKeysAndCombineDoesntThrow_thenMergesElementsAccordingly() {
+        let combine: (Int, Int) -> Int = { $0 + $1 }
+        
+        // other contains keys in sut
+        whenRootContainsHalfGivenElements()
+        var otherArr = givenElements()
+        var expectedResult = Dictionary(uniqueKeysWithValues: Array(sut))
+        expectedResult.merge(otherArr, uniquingKeysWith: combine)
+        sut.merge(otherArr, uniquingKeysWith: combine)
+        if expectedResult.count == sut.count {
+            for (key, value) in expectedResult {
+                XCTAssertEqual(sut[key], value)
+            }
+        } else {
+            XCTFail("elements are not the same amount from other: sut.count: \(sut.count) - other.count: \(otherArr.count)")
+        }
+        
+        // other doesn't implement withContiguousStorageIfAvailable
+        whenRootContainsHalfGivenElements()
+        var other = Seq(otherArr)
+        expectedResult = Dictionary(uniqueKeysWithValues: Array(sut))
+        expectedResult.merge(Array(other), uniquingKeysWith: combine)
+        sut.merge(other, uniquingKeysWith: combine)
+        if expectedResult.count == sut.count {
+            for (key, value) in expectedResult {
+                XCTAssertEqual(sut[key], value)
+            }
+        } else {
+            XCTFail("elements are not the same amount from other: sut.count: \(sut.count) - other.count: \(otherArr.count)")
+        }
+        
+        // other doesn't contain keys in sut but has duplicate keys
+        whenRootContainsHalfGivenElements()
+        otherArr =
+            givenElements().filter({ !sutIncludedKeys.contains($0.key) })
+        otherArr = otherArr + otherArr
+        otherArr.shuffle()
+        expectedResult = Dictionary(uniqueKeysWithValues: Array(sut))
+        expectedResult.merge(otherArr, uniquingKeysWith: combine)
+        sut.merge(otherArr, uniquingKeysWith: combine)
+        if expectedResult.count == sut.count {
+            for (key, value) in expectedResult {
+                XCTAssertEqual(sut[key], value)
+            }
+        } else {
+            XCTFail("elements are not the same amount from other: sut.count: \(sut.count) - other.count: \(otherArr.count)")
+        }
+        
+        // other doesn't implementWithContiguousStorageIfAvailable
+        whenRootContainsHalfGivenElements()
+        otherArr =
+            givenElements().filter({ !sutIncludedKeys.contains($0.key) })
+        otherArr = otherArr + otherArr
+        otherArr.shuffle()
+        other = Seq(otherArr)
+        expectedResult = Dictionary(uniqueKeysWithValues: Array(sut))
+        expectedResult.merge(Array(other), uniquingKeysWith: combine)
+        sut.merge(other, uniquingKeysWith: combine)
+        if expectedResult.count == sut.count {
+            for (key, value) in expectedResult {
+                XCTAssertEqual(sut[key], value)
+            }
+        } else {
+            XCTFail("elements are not the same amount from other: sut.count: \(sut.count) - other.count: \(otherArr.count)")
+        }
+    }
+    
+    func testMergeSequenceUniquingKeysWith_copyOnWrite() {
+        // when root is nil and merge adds elements,
+        // then clone's root stills nil
+        whenIsEmpty()
+        let otherArr = givenElements()
+        var clone = sut!
+        sut.merge(otherArr, uniquingKeysWith: { _, next in
+            return next
+        })
+        XCTAssertNil(clone.root)
+        
+        // when root is not nil and merge doesn't add new elements,
+        // then sut.root doesn't change
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        weak var prevCloneRoot = clone.root
+        sut.merge([], uniquingKeysWith: { _, next in next})
+        XCTAssertTrue(sut.root === clone.root, "sut.root should be the same instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+        
+        // when root is not nil and merge adds new elements,
+        // then sut.root is cloned
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        prevCloneRoot = clone.root
+        sut.merge(otherArr, uniquingKeysWith: {_, next in return next })
+        XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+        
+        // tests when other is a sequence not implementing
+        // withContiguousStorageIfAvaliable
+        whenIsEmpty()
+        clone = sut!
+        var other = Seq(otherArr)
+        sut.merge(other, uniquingKeysWith: { _, next in
+            return next
+        })
+        XCTAssertNil(clone.root)
+        
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        prevCloneRoot = clone.root
+        other = Seq([])
+        sut.merge(other, uniquingKeysWith: { _, next in
+            return next
+        })
+        XCTAssertTrue(sut.root === clone.root, "sut.root should be the same instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+        
+        whenRootContainsHalfGivenElements()
+        clone = sut!
+        prevCloneRoot = clone.root
+        other = Seq(otherArr)
+        sut.merge(other, uniquingKeysWith: { _, next in
+            return next
+        })
+        XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
+        XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
+    }
+    
+    func testMergeOtherUniquingKeysWith_whenCombineThrows() {
         var other = LLRBTree<String, Int>()
         let combine: (Int, Int) throws -> Int = { _, _ in
             throw err
@@ -150,7 +434,8 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         // root is nil and other is not empty,
         // then doesn't rethrows and elements from other are
         // inserted
-        givenKeys.forEach { other.updateValue(givenRandomValue(), forKey: $0) }
+        givenElements()
+            .forEach { other.updateValue($0.value, forKey: $0.key) }
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         XCTAssertNotNil(sut.root)
         assertEqualsByElements(lhs: sut, rhs: other)
@@ -196,7 +481,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         XCTAssertThrowsError(try sut.merging(other, uniquingKeysWith: combine))
     }
     
-    func testMergeUniquingKeysWith_whenCombineDoesntThrow() {
+    func testMergeOtherUniquingKeysWith_whenCombineDoesntThrow() {
         var executed: Bool = false
         let combine: (Int, Int) throws -> Int = { prev, next in
             executed = true
@@ -281,11 +566,12 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         }
     }
     
-    func testMergeUniquingKeysWith_copyOnWrite() {
+    func testMergeOtherUniquingKeysWith_copyOnWrite() {
         // when root is nil and merge adds elements, then clone's root stills nil
-        XCTAssertNil(sut.root)
+        whenIsEmpty()
+        var other = LLRBTree(uniqueKeysWithValues: givenElements())
         var clone = sut!
-        sut.merge(givenElements(), uniquingKeysWith: {_, next in
+        sut.merge(other, uniquingKeysWith: {_, next in
             return next
         })
         XCTAssertNil(clone.root)
@@ -293,25 +579,27 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         // when root is not nil and merge doesn't
         // add new elements, then sut.root doesn't change
         whenRootContainsHalfGivenElements()
+        other = LLRBTree<String, Int>()
         clone = sut!
         weak var prevCloneRoot = clone.root
-        sut.merge([], uniquingKeysWith: {_, next in next})
+        sut.merge(other, uniquingKeysWith: {_, next in next})
         XCTAssertTrue(sut.root === clone.root, "sut.root should be the same instance")
         XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
         
         // when root is not nil and merge adds new elements,
         // then sut.root gets copied
         whenRootContainsHalfGivenElements()
+        other = LLRBTree(uniqueKeysWithValues: givenElements())
         clone = sut!
         prevCloneRoot = clone.root
-        sut.merge(givenElements(), uniquingKeysWith: {_, next in return next })
+        sut.merge(other, uniquingKeysWith: {_, next in return next })
         XCTAssertFalse(sut.root === clone.root, "sut.root should be a different instance")
         XCTAssertTrue(clone.root === prevCloneRoot, "clone.root should have stayed the same")
     }
     
-    func testMergingUniquingKeysWith() {
+    func testMergingOtherUniquingKeysWith() {
         // Since this method wraps around
-        // merge(_:,uniquingKeysWith:) we are just gonna tests
+        // merge(_:,uniquingKeysWith:) we are just gonna test
         // that when it doesn't throw returns a different
         // instance not touching the original one
         
@@ -320,7 +608,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
             executed = true
             return prev + next
         }
-        // combine doesn't throws, and root is not nil other is
+        // combine doesn't throw and root is not nil and other is
         // not empty and contains duplicate keys,
         // then returns a copy with merged elements
         whenRootContainsHalfGivenElements()
@@ -344,9 +632,9 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         XCTAssertFalse(result.root === other.root, "result.root instance is other.root")
         XCTAssertEqual(sut, prevSut)
         XCTAssertEqual(result.count, prevSut.count + prevNotIncludedKeys.count)
-        prevSut.dropFirst(3).forEach { XCTAssertEqual(result.getValue(forKey: $0.0), $0.1) }
+        prevSut.dropFirst(3).forEach { XCTAssertEqual(result.getValue(forKey: $0.key), $0.value) }
         prevNotIncludedKeys.forEach { XCTAssertEqual(result.getValue(forKey: $0), other.getValue(forKey: $0)) }
-        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.getValue(forKey: $0.0), $0.1) }
+        expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.getValue(forKey: $0.key), $0.value) }
         if let root = result.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
             assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
