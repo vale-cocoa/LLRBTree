@@ -167,7 +167,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         // other doesn't implement withContiguousStorageIfAvailable
         // other is empty
         whenIsEmpty()
-        var other = Seq<(key: String, value: Int)>([])
+        var other = Seq<(String, Int)>([])
         hasExecuted = false
         XCTAssertNoThrow(try sut.merge(other, uniquingKeysWith: combine))
         XCTAssertFalse(hasExecuted)
@@ -203,7 +203,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         
         // other implements withContiguousStorageIfAvailable
         whenIsEmpty()
-        let other = Seq(otherArr)
+        let other = Seq<(String, Int)>(otherArr)
         hasExecuted = false
         sut.merge(other, uniquingKeysWith: combine)
         XCTAssertTrue(hasExecuted)
@@ -224,7 +224,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         // other doesn't implement withContiguousStorageIfAvailable
         whenRootContainsHalfGivenElements()
         otherArr = givenElements().filter { !sutIncludedKeys.contains($0.key) }
-        let other = Seq(otherArr)
+        let other = Seq<(String, Int)>(otherArr)
         hasExecuted = false
         sut.merge(other, uniquingKeysWith: combine)
         XCTAssertFalse(hasExecuted)
@@ -245,7 +245,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         
         // other doesn't implement withContiguousStorageIfAvailable
         whenRootContainsHalfGivenElements()
-        var other = Seq(otherArr)
+        var other = Seq<(String, Int)>(otherArr)
         hasExecuted = false
         sut.merge(other, uniquingKeysWith: combine)
         XCTAssertTrue(hasExecuted)
@@ -284,7 +284,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         
         // other doesn't implement withContiguousStorageIfAvailable
         whenRootContainsHalfGivenElements()
-        let other = Seq(givenElements())
+        let other = Seq<(String, Int)>(givenElements())
         do {
             try sut.merge(other, uniquingKeysWith: combine)
             XCTFail("has not thrown error")
@@ -312,7 +312,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         
         // other doesn't implement withContiguousStorageIfAvailable
         whenRootContainsHalfGivenElements()
-        var other = Seq(otherArr)
+        var other = Seq<(String, Int)>(otherArr)
         expectedResult = Dictionary(uniqueKeysWithValues: Array(sut))
         expectedResult.merge(Array(other), uniquingKeysWith: combine)
         sut.merge(other, uniquingKeysWith: combine)
@@ -393,7 +393,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         // withContiguousStorageIfAvaliable
         whenIsEmpty()
         clone = sut!
-        var other = Seq(otherArr)
+        var other = Seq<(String, Int)>(otherArr)
         sut.merge(other, uniquingKeysWith: { _, next in
             return next
         })

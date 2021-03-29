@@ -87,7 +87,7 @@ final class LLRBTreeInitializersTests: BaseLLRBTreeTestCase {
     }
     
     func testInitUniqueKeysWithValues_whenSequenceIsNotAnotherLLRBTRee() {
-        var keysAndValues = AnySequence<(key: String, value: Int)>(AnyIterator({ return nil }))
+        var keysAndValues = AnySequence<(String, Int)>(AnyIterator({ return nil }))
         // when keysAndValues is empty
         sut = LLRBTree(uniqueKeysWithValues: keysAndValues)
         XCTAssertNotNil(sut)

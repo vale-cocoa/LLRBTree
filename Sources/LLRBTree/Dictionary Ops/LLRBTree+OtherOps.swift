@@ -181,7 +181,7 @@ extension LLRBTree {
     ///                 of the given sequence, and *n* is the lenght of the
     ///                 final tree.
     ///                 Assuming `combine` closure has O(1) complexity.
-    public mutating func merge<S: Sequence>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S.Iterator.Element == Element {
+    public mutating func merge<S: Sequence>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S.Iterator.Element == (Key, Value) {
         if let otherTree = other as? LLRBTree<Key, Value> {
             try self.merge(otherTree, uniquingKeysWith: combine)
             
@@ -211,8 +211,8 @@ extension LLRBTree {
                 
                 makeUnique()
                 invalidateIndices()
-                for element in otherBuff {
-                    try self.root!.setValue(element.value, forKey: element.key, uniquingKeysWith: combine)
+                for (key, value) in otherBuff {
+                    try self.root!.setValue(value, forKey: key, uniquingKeysWith: combine)
                     self.root!.color = .black
                 }
                 
@@ -221,15 +221,15 @@ extension LLRBTree {
         if !done {
             var otherIterator = other.makeIterator()
             guard
-                let otherFirstElement = otherIterator.next()
+                let (firstKey, firstValue) = otherIterator.next()
             else { return }
             
             makeUnique()
             invalidateIndices()
-            try root!.setValue(otherFirstElement.value, forKey: otherFirstElement.key, uniquingKeysWith: combine)
+            try root!.setValue(firstValue, forKey: firstKey, uniquingKeysWith: combine)
             root!.color = .black
-            while let otherElement = otherIterator.next() {
-                try root!.setValue(otherElement.value, forKey: otherElement.key, uniquingKeysWith: combine)
+            while let (key, value) = otherIterator.next() {
+                try root!.setValue(value, forKey: key, uniquingKeysWith: combine)
                 root!.color = .black
             }
         }
@@ -305,7 +305,7 @@ extension LLRBTree {
     ///                 for the final tree.
     /// - Returns:  A new tree with the combined keys and values
     ///             of this tree and `other`.
-    func merging<S>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows -> LLRBTree where S : Sequence, S.Element == Element {
+    func merging<S>(_ other: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows -> LLRBTree where S : Sequence, S.Element == (Key, Value) {
         if let otherTree = other as? LLRBTree<Key, Value> {
             
             return try merging(otherTree, uniquingKeysWith: combine)

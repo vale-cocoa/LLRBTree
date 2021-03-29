@@ -46,7 +46,7 @@ extension LLRBTree {
     ///         Use `init(_:uniquingKeysWith:)` in case the sequence
     ///         might contain elements with duplicate keys.
     /// - Precondition: The sequence must not have duplicate keys.
-    public init<S: Sequence>(uniqueKeysWithValues keysAndValues: S) where S.Iterator.Element == Element {
+    public init<S: Sequence>(uniqueKeysWithValues keysAndValues: S) where S.Iterator.Element == (Key, Value) {
         if let other = keysAndValues as? LLRBTree<Key, Value> {
             self.init(other)
         } else {
@@ -98,7 +98,7 @@ extension LLRBTree {
     ///                 lenght of the given sequence,  and *n*is  the lenght of
     ///                 the the final tree.
     ///                 Assuming `combine` closure has O(1) complexity.
-    public init<S>(_ keysAndValues: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S : Sequence, S.Iterator.Element == Element {
+    public init<S>(_ keysAndValues: S, uniquingKeysWith combine: (Value, Value) throws -> Value) rethrows where S : Sequence, S.Iterator.Element == (Key, Value) {
         var newRoot: LLRBTree.Node? = nil
         let done: Bool = try keysAndValues
             .withContiguousStorageIfAvailable { kvBuffer in
@@ -107,10 +107,10 @@ extension LLRBTree {
                     kvBuffer.baseAddress != nil && kvCount > 0
                 else { return true }
                 
-                let firstElement = kvBuffer.first!
-                newRoot = LLRBTree.Node(key: firstElement.key, value: firstElement.value, color: .black)
-                for element in kvBuffer.dropFirst() {
-                    try newRoot!.setValue(element.value, forKey: element.key, uniquingKeysWith: combine)
+                let (firstKey, firstValue) = kvBuffer.first!
+                newRoot = LLRBTree.Node(key: firstKey, value: firstValue, color: .black)
+                for (key, value) in kvBuffer.dropFirst() {
+                    try newRoot!.setValue(value, forKey: key, uniquingKeysWith: combine)
                     newRoot!.color = .black
                 }
                 return true
@@ -118,16 +118,16 @@ extension LLRBTree {
         if !done {
             var iter = keysAndValues.makeIterator()
             guard
-                let firstElement = iter.next()
+                let (firstKey, firstValue) = iter.next()
             else {
                 self.init()
                 
                 return
             }
             
-            newRoot = LLRBTree.Node(key: firstElement.key, value: firstElement.value, color: .black)
-            while let element = iter.next() {
-                try newRoot!.setValue(element.value, forKey: element.key, uniquingKeysWith: combine)
+            newRoot = LLRBTree.Node(key: firstKey, value: firstValue, color: .black)
+            while let (key, value) = iter.next() {
+                try newRoot!.setValue(value, forKey: key, uniquingKeysWith: combine)
                 newRoot!.color = .black
             }
         }
@@ -156,7 +156,7 @@ extension LLRBTree {
     ///   - values: A sequence of values to group into a tree.
     ///   - keyForValue: A closure that returns a key for each element in
     ///     `values`.
-    public init<S>(grouping values: S, by keyForValue: (S.Element) throws -> Key) rethrows where Value == [S.Element], S : Sequence {
+    public init<S: Sequence>(grouping values: S, by keyForValue: (S.Element) throws -> Key) rethrows where Value == [S.Element] {
         var newRoot: LLRBTree<Key, Value>.Node? = nil
         let done: Bool = try values
             .withContiguousStorageIfAvailable { vBuff in
