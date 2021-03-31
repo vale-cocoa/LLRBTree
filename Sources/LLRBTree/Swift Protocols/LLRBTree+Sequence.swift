@@ -37,23 +37,32 @@ extension LLRBTree: Sequence {
         
         private var rootIterator: LLRBTree.Node.Iterator?
         
+        private var nextElement: Element?
+        
         init(_ root: LLRBTree.Node?) {
             self.root = root
             self.rootIterator = root?.makeIterator()
+            prepareNextElement()
         }
         
         public mutating func next() -> Element? {
-            guard rootIterator != nil else { return nil }
-            
-            let nextElement = rootIterator!.next()
-            defer {
-                if nextElement == nil {
-                    root = nil
-                    rootIterator = nil
-                }
-            }
+            defer { prepareNextElement() }
             
             return nextElement
+        }
+        
+        private mutating func prepareNextElement() {
+            guard rootIterator != nil else { return }
+            
+            nextElement = rootIterator!.next()
+            guard
+                nextElement != nil
+            else {
+                rootIterator = nil
+                root = nil
+                
+                return
+            }
         }
         
     }
