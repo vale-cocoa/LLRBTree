@@ -33,14 +33,27 @@ extension LLRBTree: Sequence {
     
     /// An iterator over the members of a `LLRBTree<Key, Value>`.
     public struct Iterator: IteratorProtocol {
+        private var root: LLRBTree.Node?
+        
         private var rootIterator: LLRBTree.Node.Iterator?
         
         init(_ root: LLRBTree.Node?) {
+            self.root = root
             self.rootIterator = root?.makeIterator()
         }
         
         public mutating func next() -> Element? {
-            rootIterator?.next()
+            guard rootIterator != nil else { return nil }
+            
+            let nextElement = rootIterator!.next()
+            defer {
+                if nextElement == nil {
+                    root = nil
+                    rootIterator = nil
+                }
+            }
+            
+            return nextElement
         }
         
     }
