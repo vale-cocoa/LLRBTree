@@ -198,7 +198,7 @@ final class LLRBTreeKeySubscriptsTests: BaseLLRBTreeTestCase {
         }
     }
     
-    func testSubscriptKeyDefault_getterThenSetter() {
+    func testSubscriptKeyDefault_modify() {
         // when is empty, then uses defaultValue
         for key in givenKeys {
             sut = LLRBTree()

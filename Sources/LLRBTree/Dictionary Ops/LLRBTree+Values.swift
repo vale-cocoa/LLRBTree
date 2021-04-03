@@ -74,10 +74,10 @@ extension LLRBTree {
         public subscript(position: LLRBTree<Key, Value>.Index) -> Value {
             get { _tree[position].value }
             
-            mutating set {
+            _modify {
                 precondition(position >= startIndex && position < endIndex, "index out of bounds")
                 let k = position.path.last!.node.key
-                _tree[k] = newValue
+                yield &_tree[k]!
             }
         }
         

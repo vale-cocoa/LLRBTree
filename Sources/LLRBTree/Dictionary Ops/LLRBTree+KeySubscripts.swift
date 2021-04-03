@@ -148,8 +148,30 @@ extension LLRBTree {
             getValue(forKey: key) ?? defaulValue()
         }
         
-        mutating set {
-            updateValue(newValue, forKey: key)
+        _modify {
+            makeUnique()
+            var other = Self()
+            (self, other) = (other, self)
+            defer {
+                other.invalidateIndices()
+                (self, other) = (other, self)
+            }
+            
+            let node: LLRBTree.Node
+            if other.root == nil {
+                node = Node(key: key, value: defaulValue(), color: .black)
+                other.root = node
+            } else {
+                if let existing = other.root!.binarySearch(key) {
+                    node = existing
+                } else {
+                    other.root!.setValue(defaulValue(), forKey: key)
+                    other.root!.color = .black
+                    node = other.root!.binarySearch(key)!
+                }
+            }
+    
+            yield &node.value
         }
     }
     
