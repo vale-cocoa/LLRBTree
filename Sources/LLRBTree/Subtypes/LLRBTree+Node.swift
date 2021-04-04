@@ -185,10 +185,10 @@ extension LLRBTree.Node: Sequence {
     struct Iterator: IteratorProtocol {
         private var position = 0
         
-        private var node: WrappedNode<LLRBTree.Node>?
+        private var node: LLRBTree.Node?
         
         init(_ node: LLRBTree.Node) {
-            self.node = withExtendedLifetime(node) { WrappedNode(node: $0) }
+            self.node = node
         }
         
         mutating func next() -> Element? {
@@ -196,17 +196,21 @@ extension LLRBTree.Node: Sequence {
             
             defer {
                 position += 1
-                if position >= (node?.node.count ?? 0) { node = nil }
+                if position >= (node?.count ?? 0) { node = nil }
             }
             
-            return node?.node.select(rank: position).element
+            return withExtendedLifetime(node) {
+                $0?.select(rank: self.position).element
+            }
         }
         
     }
     
     var underestimatedCount: Int { count }
     
-    func makeIterator() -> Iterator { Iterator(self) }
+    func makeIterator() -> Iterator {
+        withExtendedLifetime(self) { Iterator($0) }
+    }
     
 }
 
