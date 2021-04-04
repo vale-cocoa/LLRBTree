@@ -135,13 +135,26 @@ extension LLRBTree: BidirectionalCollection, RandomAccessCollection {
     /// - Returns:  The index for `key` and its associated value if `key` is in
     ///             the tree; otherwise, `nil`.
     public func index(forKey key: Key) -> Int? {
-        guard
-            let idx = root?.rank(key),
-            idx < endIndex,
-            root!.select(rank: idx).key == key
-        else { return nil }
+        func _rank(forExistingKey k: Key, on node: Node?) -> Int? {
+            guard node != nil else { return nil }
+            
+            if k < node!.key {
+                
+                return _rank(forExistingKey: k, on: node!.left)
+            }
+            
+            let lCount = node!.left?.count ?? 0
+            if k == node!.key { return lCount }
+            
+            guard
+                let rRank = _rank(forExistingKey: k, on: node!.right)
+            else { return nil }
+            
+            return lCount + 1 + rRank
+        }
         
-        return idx
+        return _rank(forExistingKey: key, on: root)
     }
     
 }
+
