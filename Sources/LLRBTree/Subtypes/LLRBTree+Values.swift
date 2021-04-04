@@ -47,10 +47,6 @@ extension LLRBTree {
         
         public var isEmpty: Bool { _tree.isEmpty }
         
-        public var first: Element? { _tree.first?.value }
-        
-        public var last: Element? { _tree.last?.value }
-        
         public var startIndex: Index { _tree.startIndex }
         
         public var endIndex: Index { _tree.endIndex }
@@ -76,8 +72,8 @@ extension LLRBTree {
             
             _modify {
                 precondition(position >= startIndex && position < endIndex, "index out of bounds")
-                let k = position.path.last!.node.key
-                yield &_tree[k]!
+                _tree.makeUnique()
+                yield &_tree.root!.select(rank: position).value
             }
         }
         

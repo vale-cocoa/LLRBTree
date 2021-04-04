@@ -64,14 +64,11 @@ final class LLRBTreeValuesTests: BaseLLRBTreeTestCase {
         whenRootContainsHalfGivenElements()
         let clone = sut!
         let expectedResult = sut!.values.map { $0 + 10 }
-        for offset in 0..<sut.values.count {
-            let idx = sut.values.index(sut.values.startIndex, offsetBy: offset)
+        for idx in 0..<sut.values.count {
             sut.values[idx] += 10
         }
-        
         XCTAssertTrue(sut.values.elementsEqual(expectedResult))
         XCTAssertFalse(sut.root === clone.root, "has not done copy on write")
-        XCTAssertFalse(sut.id === clone.id, "has not changed id")
     }
     
 }

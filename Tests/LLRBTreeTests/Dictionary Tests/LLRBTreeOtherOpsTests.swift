@@ -433,7 +433,6 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         
         sut.merge(other, uniquingKeysWith: combine)
         XCTAssertTrue(sut.root === other.root, "root is not other's reference")
-        XCTAssertTrue(sut.id === other.id, "id is not other's id")
         XCTAssertFalse(hasExecuted)
     }
     
@@ -447,11 +446,9 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         whenRootContainsHalfGivenElements()
         let other = LLRBTree<String, Int>()
         weak var prevRoot = sut.root
-        weak var prevID = sut.id
         
         sut.merge(other, uniquingKeysWith: combine)
         XCTAssertTrue(sut.root === prevRoot, "changed root's reference")
-        XCTAssertTrue(sut.id === prevID, "changed id")
         XCTAssertFalse(hasExecuted)
     }
     
@@ -468,11 +465,9 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         let other = LLRBTree(uniqueKeysWithValues: otherArr)
         var expectedResult = Dictionary(uniqueKeysWithValues: sut!.map({ $0 }))
         expectedResult.merge(otherArr, uniquingKeysWith: combine)
-        let prevID = sut.id
         
         sut.merge(other, uniquingKeysWith: combine)
         XCTAssertFalse(hasExecuted)
-        XCTAssertFalse(sut.id === prevID, "has not updated id")
         if sut.count == expectedResult.count {
             for (key, value) in expectedResult {
                 XCTAssertEqual(sut[key], value)
@@ -493,11 +488,9 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         let other = LLRBTree(uniqueKeysWithValues: givenElements())
         var expectedResult = Dictionary(uniqueKeysWithValues: sut.map({ $0 }))
         expectedResult.merge(other.map({ $0 }), uniquingKeysWith: combine)
-        let prevID = sut.id
         
         sut.merge(other, uniquingKeysWith: combine)
         XCTAssertTrue(hasExecuted)
-        XCTAssertFalse(sut.id === prevID, "has not updated id")
         if sut.count == expectedResult.count {
             for (key, value) in expectedResult {
                 XCTAssertEqual(sut[key], value)
@@ -577,7 +570,7 @@ final class LLRBTreeOtherOpsTests: BaseLLRBTreeTestCase {
         expectedResultForDuplicateKeys.forEach { XCTAssertEqual(result.getValue(forKey: $0.0), $0.1) }
         if let root = result.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
+            assertEachNodeCountIsCorrect(root: root)
         }
     }
     

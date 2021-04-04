@@ -75,17 +75,14 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue(), color: .black)
         sut.left!.right = LLRBTree.Node(key: smallerKeys[2], value: givenRandomValue(), color: .black)
         sut.left!.updateCount()
-        sut.left!.updatePaths()
         
         let largerKeys = givenAllLargerKeysThanSutKey().prefix(3)
         sut.right = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue(), color: .black)
         sut.right!.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.updateCount()
-        sut.right!.updatePaths()
         
         sut.updateCount()
-        sut.updatePaths()
     }
     
     func whenShouldRotateLeft() {
@@ -97,16 +94,13 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.left = LLRBTree.Node(key: leftTreeKeys[0], value: givenRandomValue(), color: .black)
         sut.left!.right = LLRBTree.Node(key: leftTreeKeys[2], value: givenRandomValue(), color: .black)
         sut.left!.updateCount()
-        sut.left!.updatePaths()
         
         sut.right = LLRBTree.Node(key: rightTreeKeys[1], value: givenRandomValue())
         sut.right!.left = LLRBTree.Node(key: rightTreeKeys[0], value: givenRandomValue(), color: .black)
         sut.right!.right = LLRBTree.Node(key: rightTreeKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.updateCount()
-        sut.right!.updatePaths()
         
         sut.updateCount()
-        sut.updatePaths()
     }
     
     func whenHasRedLeftChildAndHasRedLeftGrandChild() {
@@ -117,18 +111,14 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.right = LLRBTree.Node(key: smallerKeys[3], value: givenRandomValue(), color: .black)
         sut.left!.left!.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue(), color: .black)
         sut.left!.left!.updateCount()
-        sut.left!.left!.updatePaths()
         sut.left!.updateCount()
-        sut.left!.updatePaths()
         
         let largerKeys = givenAllLargerKeysThanSutKey().prefix(2)
         sut.right = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue())
         sut.right!.updateCount()
-        sut.right!.updatePaths()
         
         sut.updateCount()
-        sut.updatePaths()
     }
     
     func whenShouldRotateLeftThenRightAndThenFlipColorsToBalance() {
@@ -155,21 +145,16 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.right = LLRBTree.Node(key: smallKeys[3], value: givenRandomValue(), color: .black)
         sut.left!.left!.left = LLRBTree.Node(key: smallKeys[0], value: givenRandomValue(), color: .red)
         sut.left!.left!.updateCount()
-        sut.left!.left!.updatePaths()
         sut.left!.updateCount()
-        sut.left!.updatePaths()
         
         sut.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[01], value: givenRandomValue(), color: .black)
         sut.right!.left!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue(), color: .red)
         sut.right!.right = LLRBTree.Node(key: largerKeys[3], value: givenRandomValue(), color: .black)
         sut.right!.left!.updateCount()
-        sut.right!.left!.updatePaths()
         sut.right!.updateCount()
-        sut.right!.updatePaths()
         
         sut.updateCount()
-        sut.updatePaths()
     }
     
     func whenShouldMoveRedLeft_RightLeftIsRed() {
@@ -197,21 +182,16 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.left!.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue())
         sut.left!.right = LLRBTree.Node(key: smallerKeys[3], value: givenRandomValue(), color: .black)
         sut.left!.left!.updateCount()
-        sut.left!.left!.updatePaths()
         sut.left!.updateCount()
-        sut.left!.updatePaths()
         
         sut.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         sut.right!.left!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue(), color: .red)
         sut.right!.right = LLRBTree.Node(key: largerKeys[3], value: givenRandomValue(), color: .black)
         sut.right!.left!.updateCount()
-        sut.right!.left!.updatePaths()
         sut.right!.updateCount()
-        sut.right!.updatePaths()
         
         sut.updateCount()
-        sut.updatePaths()
     }
     
     func whenShouldMoveRedRight_LeftGrandChildIsRed() {
@@ -227,21 +207,16 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.left!.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue(), color: .black)
         sut.left!.right = LLRBTree.Node(key: smallerKeys[3], value: givenRandomValue(), color: .black)
         sut.left!.left!.updateCount()
-        sut.left!.left!.updatePaths()
         sut.left!.updateCount()
-        sut.left!.updatePaths()
         
         sut.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
         sut.right!.left = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         sut.right!.left!.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue(), color: .red)
         sut.right!.right = LLRBTree.Node(key: largerKeys[3], value: givenRandomValue(), color: .black)
         sut.right!.left!.updateCount()
-        sut.right!.left!.updatePaths()
         sut.right!.updateCount()
-        sut.right!.updatePaths()
         
         sut.updateCount()
-        sut.updatePaths()
     }
     
     func whenBalancedTreeWithAllGivenKeys() {
@@ -251,7 +226,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             sut.color = .black
         }
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     func whenBalancedTreeWithHalfGivenKeys() {
@@ -262,7 +237,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             sut.color = .black
         }
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     // MARK: - Tests
@@ -281,8 +256,6 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertEqual(sut.color, color)
             XCTAssertNil(sut.left)
             XCTAssertNil(sut.right)
-            XCTAssertTrue(sut.pathToMin.isEmpty, "pathToMin should be empty")
-            XCTAssertTrue(sut.pathToMax.isEmpty, "pathToMax should be empty")
         }
     }
     
@@ -347,22 +320,6 @@ final class LLRBTreeNodeTests: XCTestCase {
         }
     }
     
-    func testPathToMin() {
-        sut.left = LLRBTree.Node(key: givenAllSmallerKeysThanSutKey().randomElement()!, value: givenRandomValue())
-        sut.pathToMin.append(WrappedNode(node: sut.left!))
-        XCTAssertFalse(sut.pathToMin.isEmpty)
-        XCTAssertTrue(sut.pathToMin.last?.node === sut.left, "pathToMin last node was not set to wrap the correct node instance")
-        XCTAssertTrue(isKnownUniquelyReferenced(&sut.left!))
-    }
-    
-    func testPathToMax() {
-        sut.right = LLRBTree.Node(key: givenAllLargerKeysThanSutKey().randomElement()!, value: givenRandomValue())
-        sut.pathToMax.append(WrappedNode(node: sut.right!))
-        XCTAssertFalse(sut.pathToMax.isEmpty)
-        XCTAssertTrue(sut.pathToMax.last?.node === sut.right, "pathToMin last node was not set to wrap the correct node instance")
-        XCTAssertTrue(isKnownUniquelyReferenced(&sut.right!))
-    }
-    
     func testNodeColorFlip() {
         for color in LLRBTree<String, Int>.Node.Color.allCases {
             let expectedResult: LLRBTree<String, Int>.Node.Color = color == .red ? .black : .red
@@ -386,13 +343,10 @@ final class LLRBTreeNodeTests: XCTestCase {
         let original = LLRBTree<MYSKey, MYSValue>.Node(key: b, value: bV, color: .red)
         original.left = LLRBTree<MYSKey, MYSValue>.Node(key: a, value: aV, color: .black)
         original.left!.updateCount()
-        original.left!.updatePaths()
         original.right = LLRBTree<MYSKey, MYSValue>.Node(key: c, value: cV, color: .black)
         original.right!.updateCount()
-        original.right!.updatePaths()
         
         original.updateCount()
-        original.updatePaths()
         
         let clone = original.copy() as? LLRBTree<MYSKey, MYSValue>.Node
         XCTAssertNotNil(clone)
@@ -423,14 +377,11 @@ final class LLRBTreeNodeTests: XCTestCase {
         let original = LLRBTree<MYKey, MyValue>.Node(key: b, value: bV, color: .red)
         original.left = LLRBTree<MYKey, MyValue>.Node(key: a, value: aV, color: .black)
         original.left!.updateCount()
-        original.left!.updatePaths()
         
         original.right = LLRBTree<MYKey, MyValue>.Node(key: c, value: cV, color: .black)
         original.right!.updateCount()
-        original.right!.updatePaths()
         
         original.updateCount()
-        original.updatePaths()
         
         let clone = original.copy() as? LLRBTree<MYKey, MyValue>.Node
         XCTAssertNotNil(clone)
@@ -464,7 +415,6 @@ final class LLRBTreeNodeTests: XCTestCase {
             .randomElement()!
         
         sut.left = LLRBTree.Node(key: smallerKey, value: givenRandomValue(), color: .red)
-        sut.updatePaths()
         
         XCTAssertEqual(sut.min, sut.left)
         XCTAssertEqual(sut.minKey, sut.left?.key)
@@ -476,11 +426,9 @@ final class LLRBTreeNodeTests: XCTestCase {
         let leftTree = LLRBTree.Node(key: smallerKeys[1], value: givenRandomValue(), color: .red)
         leftTree.left = LLRBTree.Node(key: smallerKeys[0], value: givenRandomValue(), color: .black)
         leftTree.right = LLRBTree.Node(key: smallerKeys[2], value: givenRandomValue(), color: .black)
-        leftTree.updatePaths()
         
         let expectedResult = leftTree.min
         sut.left = leftTree
-        sut.updatePaths()
         
         XCTAssertEqual(sut.min, expectedResult)
         XCTAssertEqual(sut.minKey, expectedResult.key)
@@ -499,7 +447,6 @@ final class LLRBTreeNodeTests: XCTestCase {
             .randomElement()!
         
         sut.right = LLRBTree.Node(key: largerKey, value: givenRandomValue(), color: .black)
-        sut.updatePaths()
         
         XCTAssertEqual(sut.max, sut.right)
         XCTAssertEqual(sut.maxKey, sut.right?.key)
@@ -511,12 +458,10 @@ final class LLRBTreeNodeTests: XCTestCase {
         let rightTree = LLRBTree.Node(key: largerKeys[1], value: givenRandomValue(), color: .black)
         rightTree.left = LLRBTree.Node(key: largerKeys[0], value: givenRandomValue())
         rightTree.right = LLRBTree.Node(key: largerKeys[2], value: givenRandomValue(), color: .black)
-        rightTree.updatePaths()
         
         let expectedResult = rightTree.max
         
         sut.right = rightTree
-        sut.updatePaths()
         XCTAssertEqual(sut.max, expectedResult)
         XCTAssertEqual(sut.maxKey, expectedResult.key)
         XCTAssertGreaterThan(sut.maxKey, sut.key)
@@ -966,7 +911,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertEqual(result, expectedResult)
         if result != nil {
             assertLeftLeaningRedBlackTreeInvariants(root: result!)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: result!)
+            assertEachNodeCountIsCorrect(root: result!)
         }
         
     }
@@ -1034,32 +979,26 @@ final class LLRBTreeNodeTests: XCTestCase {
         let right = LLRBTree.Node(key: "F", value: 11, color: .black)
         sut.left = left
         sut.updateCount()
-        sut.updatePaths()
         XCTAssertNotEqual(sut, other)
         
         other.left = left.clone()
         other.updateCount()
-        other.updatePaths()
         XCTAssertEqual(sut, other)
         
         sut.right = right
         sut.updateCount()
-        sut.updatePaths()
         XCTAssertNotEqual(sut, other)
         
         other.right = right.clone()
         other.updateCount()
-        other.updatePaths()
         XCTAssertEqual(sut, other)
         
         sut.left = nil
         sut.updateCount()
-        sut.updatePaths()
         XCTAssertNotEqual(sut, other)
         
         other.left = nil
         other.updateCount()
-        other.updatePaths()
         XCTAssertEqual(sut, other)
         
         sut.right = nil
@@ -1070,12 +1009,10 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left = left
         sut.right = right
         sut.updateCount()
-        sut.updatePaths()
         
         other.left = LLRBTree.Node(key: "A", value: 23, color: .red)
         other.right = (right.copy() as! LLRBTree<String, Int>.Node)
         other.updateCount()
-        other.updatePaths()
         
         XCTAssertNotEqual(sut.left, other.left)
         XCTAssertEqual(sut.right, other.right)
@@ -1084,7 +1021,6 @@ final class LLRBTreeNodeTests: XCTestCase {
         other.left = left.clone()
         other.right = LLRBTree.Node(key: "Z", value: 11, color: .red)
         other.updateCount()
-        other.updatePaths()
         XCTAssertEqual(sut.left, other.left)
         XCTAssertNotEqual(sut.right, other.right)
         XCTAssertNotEqual(sut, other)
@@ -1114,7 +1050,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         
         XCTAssertNil(oldRight, "rotateLeft() leaks memory")
         
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     // MARK: - rotateRight() tests
@@ -1140,7 +1076,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         
         XCTAssertNil(oldLeft, "rotateLeft leaks memory")
         
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     // MARK: - moveRedLeft() tests
@@ -1170,7 +1106,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertEqual(sut.right?.left, clone.right!.left!)
         XCTAssertEqual(sut.right?.right, clone.right?.right!)
         
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     func testMoveRedLeft_whenRightLeftChildIsRed() {
@@ -1193,7 +1129,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertFalse(sut.hasRedLeftChild)
         XCTAssertTrue(sut.hasRedLeftGrandChild)
         
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     // MARK: - moveRedRight() tests
@@ -1225,7 +1161,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertEqual(sut.right?.left, clone.right!.left!)
         XCTAssertEqual(sut.right?.right, clone.right!.right!)
         
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     
@@ -1249,14 +1185,13 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertFalse(sut.hasRedLeftGrandChild)
         XCTAssertTrue(sut.right?.hasRedRightChild ?? false)
         
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     // MARK: - fixUp() tests
     func testFixUp_whenIsBlackAndHasRedRightChild_thenRotateLeftOnly() {
         sut.right = LLRBTree.Node(key: givenAllLargerKeysThanSutKey().randomElement()!, value: givenRandomValue())
         sut.updateCount()
-        sut.updatePaths()
         
         XCTAssertFalse(sut.isRed)
         XCTAssertTrue(sut.hasRedRightChild)
@@ -1272,7 +1207,6 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left = LLRBTree.Node(key: givenAllSmallerKeysThanSutKey().randomElement()!, value: givenRandomValue(), color: .black)
         sut.right = LLRBTree.Node(key: givenAllLargerKeysThanSutKey().randomElement()!, value: givenRandomValue())
         sut.updateCount()
-        sut.updatePaths()
         
         XCTAssertFalse(sut.isRed)
         XCTAssertTrue(sut.hasRedRightChild)
@@ -1283,7 +1217,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.fixUp()
         XCTAssertEqual(sut, expectedResult)
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     func testFixUp_whenHasRedLeftChildAndHasRedLeftGrandChild_thenRotateRightAndFlipColors() {
@@ -1295,7 +1229,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.fixUp()
         XCTAssertEqual(sut, expectedResult)
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     func testFixUp_whenHasRedRightChildAndAfterRotatingLefttHasRedLeftChildAndHasRedLeftGrandchild_thenAfterRotatingLeftRotatesRightAndFlipColors() {
@@ -1308,7 +1242,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.fixUp()
         XCTAssertEqual(sut, expectedResult)
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     func testFixUp_rebalanceAfterMoveRedLeft() {
@@ -1318,7 +1252,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.fixUp()
         sut.fixUp()
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
         
         whenShouldMoveRedLeft_RightLeftIsBlack()
         sut.moveRedLeft()
@@ -1326,7 +1260,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.left!.fixUp()
         sut.fixUp()
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     func testFixUp_rebalanceAfterMoveRedRight() {
@@ -1336,7 +1270,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.right!.fixUp()
         sut.fixUp()
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
         
         whenShouldMoveRedRight_LeftGranChildIsBlack()
         sut.moveRedRight()
@@ -1344,7 +1278,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         sut.right!.fixUp()
         sut.fixUp()
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
     }
     
     // MARK: - updateCount() tests
@@ -1433,41 +1367,6 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertEqual(sut.right?.color, rightExpectedColor)
     }
     
-    // MARK: updatePaths() tests
-    func testUpdatePaths_whenPathToMinShouldBeUpdated() {
-        whenBalancedTree()
-        let l = sut.left
-        sut.left = nil
-        XCTAssertFalse(sut.pathToMin.isEmpty)
-        
-        sut.updatePaths()
-        XCTAssertTrue(sut.pathToMin.isEmpty)
-        
-        sut.left = l
-        XCTAssertTrue(sut.pathToMin.isEmpty)
-        sut.updateCount()
-        sut.updatePaths()
-        XCTAssertFalse(sut.pathToMin.isEmpty)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
-    }
-    
-    func testUpdatePaths_whenPathToMaxShouldBeUpdated() {
-        whenBalancedTree()
-        let r = sut.right
-        sut.right = nil
-        XCTAssertFalse(sut.pathToMax.isEmpty)
-        
-        sut.updatePaths()
-        XCTAssertTrue(sut.pathToMax.isEmpty)
-        
-        sut.right = r
-        XCTAssertTrue(sut.pathToMax.isEmpty)
-        sut.updateCount()
-        sut.updatePaths()
-        XCTAssertFalse(sut.pathToMax.isEmpty)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
-    }
-    
     // MARK: - C.R.U.D. tests
     // MARK: - get/set value for key tests
     func testGetValueForKey_whenKeyIsInTree_thenReturnsAssociatedValue() {
@@ -1499,7 +1398,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertNotEqual(newValueForKey, element.value)
             XCTAssertEqual(newValueForKey, element.value * 10)
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
     }
     
@@ -1515,7 +1414,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             sut.setValue(newValue, forKey: newKey)
             XCTAssertEqual(sut.count, prevCount + 1)
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
             XCTAssertEqual(sut.getValue(forKey: newKey), newValue)
         }
     }
@@ -1538,7 +1437,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertEqual(sut.getValue(forKey: k), newValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
         
         // when forKey is equal to node key,
@@ -1559,7 +1458,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertEqual(sut.getValue(forKey: k), newValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
         
         // when forKey is a key in the tree,
@@ -1592,7 +1491,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertEqual(sut.getValue(forKey: k), newValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
         
         // when forKey is equal to node key, then combine gets
@@ -1606,7 +1505,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         XCTAssertEqual(sut.count, prevCount)
         XCTAssertEqual(sut.getValue(forKey: sut.key), expectedValue)
         assertLeftLeaningRedBlackTreeInvariants(root: sut)
-        assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+        assertEachNodeCountIsCorrect(root: sut)
         
         // node is a tree
         whenBalancedTreeWithHalfGivenKeys()
@@ -1625,7 +1524,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertEqual(sut.getValue(forKey: k), newValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
         
         // when forKey is in tree, then combine gets executed
@@ -1644,7 +1543,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             XCTAssertEqual(sut.getValue(forKey: k), expectedValue)
             sut.color = .black
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
     }
     
@@ -1661,7 +1560,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             sut.color = .black
             XCTAssertEqual(sut.getValue(forKey: k), newValue)
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
     }
     
@@ -1677,7 +1576,7 @@ final class LLRBTreeNodeTests: XCTestCase {
             sut.color = .black
             XCTAssertEqual(sut.getValue(forKey: k), newValue)
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
     }
         
@@ -1697,7 +1596,7 @@ final class LLRBTreeNodeTests: XCTestCase {
                 XCTAssertEqual(result.element?.value, expectedValue)
                 if sut != nil {
                     assertLeftLeaningRedBlackTreeInvariants(root: sut)
-                    assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+                    assertEachNodeCountIsCorrect(root: sut)
                 }
             }
             XCTAssertNil(sut, "sut is not nil after having removed all keys")
@@ -1719,7 +1618,7 @@ final class LLRBTreeNodeTests: XCTestCase {
                 XCTAssertEqual(sut.count, prevCount)
                 XCTAssertNil(result.element)
                 assertLeftLeaningRedBlackTreeInvariants(root: sut)
-                assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+                assertEachNodeCountIsCorrect(root: sut)
             }
         }
     }
@@ -1740,7 +1639,7 @@ final class LLRBTreeNodeTests: XCTestCase {
                 XCTAssertEqual(result.element?.key, minKey)
                 XCTAssertEqual(result.element?.value, prevMinValue)
                 assertLeftLeaningRedBlackTreeInvariants(root: sut)
-                assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+                assertEachNodeCountIsCorrect(root: sut)
             }
             let minKey = givenKeys.max()
             let expectedValue = sut.value
@@ -1770,7 +1669,7 @@ final class LLRBTreeNodeTests: XCTestCase {
                 XCTAssertEqual(result.element?.key, maxKey)
                 XCTAssertEqual(result.element?.value, expectedValue)
                 assertLeftLeaningRedBlackTreeInvariants(root: sut)
-                assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+                assertEachNodeCountIsCorrect(root: sut)
             }
             let maxKey = givenKeys.min()
             let maxValue = sut.value
@@ -1815,7 +1714,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         }
         if sut != nil {
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
     }
     
@@ -1833,7 +1732,7 @@ final class LLRBTreeNodeTests: XCTestCase {
         }
         if sut != nil {
             assertLeftLeaningRedBlackTreeInvariants(root: sut)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut)
+            assertEachNodeCountIsCorrect(root: sut)
         }
     }
     

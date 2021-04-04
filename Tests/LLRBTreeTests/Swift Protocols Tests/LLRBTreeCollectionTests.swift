@@ -72,46 +72,29 @@ final class LLRBTreeCollectionTests: BaseLLRBTreeTestCase {
     
     // MARK: - startIndex tests
     func testStartIndex() {
-        // when isEmpty == true,
-        // then returns Index with empty path,
-        // nil root and same id of tree
+        // Always returns 0
         sut = _Tree()
-        var idx = sut.startIndex
-        XCTAssertNil(idx.root)
-        XCTAssertTrue(idx.path.isEmpty)
-        XCTAssertTrue(idx.id === sut.id)
+        XCTAssertEqual(sut.startIndex, 0)
         
-        // when isEmpty == false,
-        // then returns Index with root wrapping
-        // tree root node, path not empty, path.last wrapping
-        // tree's root.min node, and same id of tree
+        
         whenRootContainsHalfGivenElements()
-        idx = sut.startIndex
-        XCTAssertTrue(idx.root?.node === sut.root)
-        XCTAssertFalse(idx.path.isEmpty)
-        XCTAssertTrue(idx.path.last?.node === sut.root?.min)
-        XCTAssertTrue(idx.id === sut.id)
+        XCTAssertEqual(sut.startIndex, 0)
+        
+        whenRootContainsAllGivenElements()
+        XCTAssertEqual(sut.startIndex, 0)
     }
     
     // MARK: endIndex tests
     func testEndIndex() {
-        // when isEmpty == true,
-        // then returns Index with empty path,
-        // nil root and same id of tree
+        // always returns same value of count
         sut = _Tree()
-        var idx = sut.endIndex
-        XCTAssertNil(idx.root)
-        XCTAssertTrue(idx.path.isEmpty)
-        XCTAssertTrue(idx.id === sut.id)
+        XCTAssertEqual(sut.endIndex, sut.count)
         
-        // when isEmpty == false,
-        // then returns Index with root wrapping
-        // tree root node, path empty, and same id of tree
         whenRootContainsHalfGivenElements()
-        idx = sut.endIndex
-        XCTAssertTrue(idx.root?.node === sut.root)
-        XCTAssertTrue(idx.path.isEmpty)
-        XCTAssertTrue(idx.id === sut.id)
+        XCTAssertEqual(sut.endIndex, sut.count)
+        
+        whenRootContainsAllGivenElements()
+        XCTAssertEqual(sut.endIndex, sut.count)
     }
     
     // MARK: - first tests
@@ -150,98 +133,34 @@ final class LLRBTreeCollectionTests: BaseLLRBTreeTestCase {
     
     // MARK: - index(after:) tests
     func testIndexAfter() {
-        // when i == endIndex, then returns endIndex
-        var i = sut.endIndex
-        var indexAfter = sut.index(after: i)
-        XCTAssertEqual(indexAfter, sut.endIndex)
-        
-        // when i != endIndex, returns index pointing to next
-        // element
-        i = sut.startIndex
-        indexAfter = i
-        var iterator = sut.makeIterator()
-        while let expectedElement = iterator.next() {
-            XCTAssertEqual(indexAfter.path.last?.node.key, expectedElement.0)
-            XCTAssertEqual(indexAfter.path.last?.node.value, expectedElement.1)
-            i = indexAfter
-            indexAfter = sut.index(after: i)
-            XCTAssertGreaterThan(indexAfter, i)
-        }
-        XCTAssertEqual(indexAfter, sut.endIndex)
+        // always returns i + 1
+        let i = Int.random(in: 0..<Int.max)
+        XCTAssertEqual(sut.index(after: i), i + 1)
     }
     
     // MARK: - formIndex(after:) tests
     func testFormIndexAfter() {
-        // when i == endIndex, then returns endIndex
-        var i = sut.endIndex
+        // always adds 1 to i
+        var i = Int.random(in: 0..<Int.max)
+        let expectedResult = i + 1
         sut.formIndex(after: &i)
-        XCTAssertEqual(i, sut.endIndex)
-        
-        // when i != endIndex, then returns index pointing to
-        // next element
-        i = sut.startIndex
-        var iterator = sut.makeIterator()
-        while let expectedElement = iterator.next() {
-            XCTAssertEqual(i.path.last?.node.key, expectedElement.0)
-            XCTAssertEqual(i.path.last?.node.value, expectedElement.1)
-            let prev = i
-            sut.formIndex(after: &i)
-            XCTAssertGreaterThan(i, prev)
-        }
-        XCTAssertEqual(i, sut.endIndex)
+        XCTAssertEqual(i, expectedResult)
     }
     
     // MARK: - index(before:) tests
     func testIndexBefore() {
-        // when i == startIndex, then returns endIndex
-        var i = sut.startIndex
-        var indexBefore = sut.index(before: i)
-        XCTAssertEqual(indexBefore, sut.endIndex)
-        
-        // when i == endIndex, then returns index pointing to
-        // last element
-        i = sut.endIndex
-        indexBefore = sut.index(before: i)
-        XCTAssertEqual(indexBefore.path.last?.node.key, sut.max?.0)
-        XCTAssertEqual(indexBefore.path.last?.node.value, sut.max?.1)
-        
-        // when i != endIndex && i != startIndex,
-        // then returns index pointing to element before
-        let reversed = sut.reversed()
-        var reversedIterator = reversed.makeIterator()
-        while let prevElement = reversedIterator.next() {
-            XCTAssertEqual(indexBefore.path.last?.node.key, prevElement.0)
-            XCTAssertEqual(indexBefore.path.last?.node.value, prevElement.1)
-            i = indexBefore
-            indexBefore = sut.index(before: i)
-        }
-        XCTAssertEqual(indexBefore, sut.endIndex)
+        // always returns i - 1
+        let i = Int.random(in: (Int.min + 1)..<Int.max)
+        XCTAssertEqual(sut.index(before: i), i - 1)
     }
     
     // MARK: - formIndex(before:) tests
     func testFormIndexBefore() {
-        // when i == startIndex, then returns endIndex
-        var i = sut.startIndex
+        // always subtracts 1 to i
+        var i = Int.random(in: (Int.min + 1)..<Int.max)
+        let expectedResult = i - 1
         sut.formIndex(before: &i)
-        XCTAssertEqual(i, sut.endIndex)
-        
-        // when i == endIndex, then returns index pointing to
-        // last element
-        i = sut.endIndex
-        sut.formIndex(before: &i)
-        XCTAssertEqual(i.path.last?.node.key, sut.max?.key)
-        XCTAssertEqual(i.path.last?.node.value, sut.max?.value)
-        
-        // when i != endIndex && i != startIndex,
-        // then returns index pointing to element before
-        let reversed = sut.reversed()
-        var reversedIterator = reversed.makeIterator()
-        while let prevElement = reversedIterator.next() {
-            XCTAssertEqual(i.path.last?.node.key, prevElement.key)
-            XCTAssertEqual(i.path.last?.node.value, prevElement.value)
-            sut.formIndex(before: &i)
-        }
-        XCTAssertEqual(i, sut.endIndex)
+        XCTAssertEqual(i, expectedResult)
     }
     
     // MARK: - subscript tests
@@ -261,26 +180,20 @@ final class LLRBTreeCollectionTests: BaseLLRBTreeTestCase {
     func testRemoveAtIndex() {
         whenRootContainsAllGivenElements()
         for key in givenKeys.shuffled() {
-            let copy = sut
-            weak var prevID = sut.id
-            weak var prevRoot = sut.root
+            let copy = sut!
             let prevCount = sut.count
             let expectedValue = sut.getValue(forKey: key)
-            let idx = LLRBTree<String, Int>.Index(asIndexOfKey: key, for: sut)
-            
+            let idx = sut.index(forKey: key)!
             let result = sut.remove(at: idx)
             XCTAssertEqual(result.key, key)
             XCTAssertEqual(result.value, expectedValue)
             XCTAssertNil(sut[key])
             XCTAssertEqual(sut.count, prevCount - 1)
-            XCTAssertFalse(sut.id === prevID, "has not updated ID")
             if sut.root != nil {
                 assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
             }
             // value semantics test
-            XCTAssertFalse(sut.root === prevRoot, "has not done copy on write")
-            XCTAssertTrue(copy?.id === prevID, "has updated id on copy")
-            XCTAssertTrue(copy?.root === prevRoot, "has changed root reference on copy while it was supposed to stay the same")
+            XCTAssertFalse(sut.root === copy.root, "has not done copy on write")
         }
     }
     

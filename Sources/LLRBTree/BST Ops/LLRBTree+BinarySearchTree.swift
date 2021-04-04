@@ -33,10 +33,10 @@ extension LLRBTree {
     /// The element with the smallest key stored in this tree; `nil` when
     /// `isEmpty` is `true`.
     ///
-    /// - Complexity: O(1).
+    /// - Complexity: O(log*n*) where *n* is the lenght of the tree.
     @inline(__always)
     public var min: Element? {
-        root?.left?.pathToMin.last?.node.element ?? root?.left?.element ?? root?.element
+        root?.min.element
     }
     
     /// The element with the greatest key stored in this tree; `nil` when
@@ -45,7 +45,7 @@ extension LLRBTree {
     /// - Complexity:   O(1).
     @inline(__always)
     public var max: Element? {
-        root?.right?.pathToMax.last?.node.element ?? root?.right?.element ?? root?.element
+        root?.max.element
     }
     
     /// The smallest key stored in this tree; `nil` when

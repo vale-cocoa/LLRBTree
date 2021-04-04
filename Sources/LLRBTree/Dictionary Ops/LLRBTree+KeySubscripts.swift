@@ -143,6 +143,8 @@ extension LLRBTree {
     ///                     in the tree.
     /// - Returns:  The value associated with `key` in the tree;
     ///             otherwise, `defaultValue`.
+    /// - Complexity:   Amortized O(log *n*) where *n* is
+    ///                 the lenght of this tree.
     public subscript(key: Key, default defaulValue: @autoclosure() -> Value) -> Value {
         get {
             getValue(forKey: key) ?? defaulValue()
@@ -153,7 +155,6 @@ extension LLRBTree {
             var other = Self()
             (self, other) = (other, self)
             defer {
-                other.invalidateIndices()
                 (self, other) = (other, self)
             }
             

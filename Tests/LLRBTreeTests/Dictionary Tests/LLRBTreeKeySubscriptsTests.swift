@@ -107,7 +107,7 @@ final class LLRBTreeKeySubscriptsTests: BaseLLRBTreeTestCase {
             XCTAssertTrue(sut.rootIsBlack, "root should be a black node")
             if sut.root != nil {
                 assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-                assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
+                assertEachNodeCountIsCorrect(root: sut.root!)
             }
         }
         XCTAssertNil(sut.root)
@@ -125,7 +125,7 @@ final class LLRBTreeKeySubscriptsTests: BaseLLRBTreeTestCase {
             XCTAssertTrue(sut.rootIsBlack, "root should be a black node")
             if sut.root != nil {
                 assertLeftLeaningRedBlackTreeInvariants(root: sut.root!)
-                assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: sut.root!)
+                assertEachNodeCountIsCorrect(root: sut.root!)
             }
         }
     }
@@ -165,7 +165,6 @@ final class LLRBTreeKeySubscriptsTests: BaseLLRBTreeTestCase {
             sut[key, default: defaultValue] = newValue
             XCTAssertEqual(sut[key], newValue)
             XCTAssertFalse(sut.root === copy.root, "has not done copy on write")
-            XCTAssertFalse(sut.id === copy.id, "has not changed id")
         }
         
         // when is not empty and doesn't contain key,
@@ -180,7 +179,6 @@ final class LLRBTreeKeySubscriptsTests: BaseLLRBTreeTestCase {
             XCTAssertEqual(sut[key], newValue)
             XCTAssertEqual(sut.count, prevCount + 1)
             XCTAssertFalse(sut.root === copy.root, "has not done copy on write")
-            XCTAssertFalse(sut.id === copy.id, "has not changed id")
         }
         
         // when is not empty and contains key,
@@ -194,7 +192,6 @@ final class LLRBTreeKeySubscriptsTests: BaseLLRBTreeTestCase {
             XCTAssertEqual(sut[key], newValue)
             XCTAssertEqual(sut.count, prevCount)
             XCTAssertFalse(sut.root === copy.root, "has not done copy on write")
-            XCTAssertFalse(sut.id === copy.id, "has not changed id")
         }
     }
     

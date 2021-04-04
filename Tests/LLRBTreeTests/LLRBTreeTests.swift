@@ -46,11 +46,6 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         XCTAssertTrue(sut.root === newRoot, "has not set root")
     }
     
-    func testId() {
-        sut = LLRBTree()
-        XCTAssertNotNil(sut.id)
-    }
-    
     func testInitRoot() {
         sut = LLRBTree(nil)
         XCTAssertNil(sut.root)
@@ -63,14 +58,12 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         var other = LLRBTree<String, Int>()
         
         sut = LLRBTree(other)
-        XCTAssertTrue(sut.id === other.id, "has set different id")
         XCTAssertNil(sut.root)
         
         let newRoot = LLRBTree.Node(key: givenKeys.randomElement()!, value: givenRandomValue(), color: .black)
         other = LLRBTree(newRoot)
         
         sut = LLRBTree(other)
-        XCTAssertTrue(sut.id === other.id, "has set different id")
         XCTAssertTrue(sut.root === newRoot, "has set different root")
     }
     
@@ -95,29 +88,6 @@ final class LLRBTreeTests: BaseLLRBTreeTestCase {
         sut.makeUnique()
         XCTAssertFalse(sut.root === prevRoot, "root is still same reference")
         XCTAssertEqual(sut.root, prevRoot)
-    }
-    
-    func testInvalidateIndices_changesIdReference() {
-        var prevID = sut.id
-        sut.invalidateIndices()
-        XCTAssertFalse(sut.id === prevID, "has not changed id reference")
-        
-        whenRootContainsHalfGivenElements()
-        prevID = sut.id
-        sut.invalidateIndices()
-        XCTAssertFalse(sut.id === prevID, "has not changed id reference")
-    }
-    
-    func testInvalidateIndicies_makesPreviouslyStoredIndicesInvalidForThisTree() {
-        whenRootContainsAllGivenElements()
-        let previousIndices = sut.indices
-        let previousEndIndex = sut.endIndex
-        
-        sut.invalidateIndices()
-        XCTAssertFalse(previousEndIndex.isValidFor(tree: sut))
-        for idx in previousIndices {
-            XCTAssertFalse(idx.isValidFor(tree: sut))
-        }
     }
     
 }

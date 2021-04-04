@@ -89,14 +89,6 @@ final class LLRBTreeCRUDTests: BaseLLRBTreeTestCase {
         }
     }
     
-    func testUpdateValue_changesID() {
-        for element in givenElements() {
-            let prevID = sut.id
-            sut.updateValue(element.value, forKey: element.key)
-            XCTAssertFalse(sut.id === prevID, "has not changed id")
-        }
-    }
-    
     func testUpdateValueForKey_copyOnWrite() {
         // when root is nil, then clone's root stills nil:
         XCTAssertNil(sut.root)
@@ -152,15 +144,6 @@ final class LLRBTreeCRUDTests: BaseLLRBTreeTestCase {
             }
         }
         XCTAssertNil(sut.root)
-    }
-    
-    func testRemoveValueForKey_changesID() {
-        whenRootContainsHalfGivenElements()
-        for k in givenKeys {
-            let prevID = sut.id
-            sut.removeValue(forKey: k)
-            XCTAssertFalse(sut.id === prevID, "has not changed id")
-        }
     }
     
     func testRemoveValueForKey_copyOnWrite() {
@@ -277,22 +260,17 @@ final class LLRBTreeCRUDTests: BaseLLRBTreeTestCase {
     
     // MARK: - removeAll() test
     func testRemoveAll() {
-        // when is empty, then changes id
+        // when is empty, then root stays nil
         XCTAssertTrue(sut.isEmpty)
-        weak var prevID = sut.id
         sut.removeAll()
         XCTAssertNil(sut.root)
-        XCTAssertFalse(sut.id === prevID, "has not changed id")
         
-        // when is not empty, then sets root to nil and changes id
+        // when is not empty, then sets root to nil
         whenRootContainsHalfGivenElements()
-        prevID = sut.id
         let clone = sut!
         sut.removeAll()
         XCTAssertNil(sut.root)
-        XCTAssertFalse(sut.id === prevID, "has not changed id")
         XCTAssertNotNil(clone.root, "has set to nil also copy's root")
-        XCTAssertTrue(clone.id === prevID, "has changed id on clone")
     }
     
 }

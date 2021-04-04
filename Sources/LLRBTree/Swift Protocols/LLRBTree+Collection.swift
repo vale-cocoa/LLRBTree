@@ -29,7 +29,7 @@
 import Foundation
 import BinaryNode
 
-extension LLRBTree: BidirectionalCollection {
+extension LLRBTree: BidirectionalCollection, RandomAccessCollection {
     /// The number of elements stored in this tree.
     ///
     /// - Complexity: O(1)
@@ -43,45 +43,25 @@ extension LLRBTree: BidirectionalCollection {
     public var isEmpty: Bool { root == nil }
     
     @inline(__always)
-    public var startIndex: Index {
-        Index(asStartIndexOf: self)
-    }
+    public var startIndex: Int{ 0 }
     
     @inline(__always)
-    public var endIndex: Index {
-        Index(asEndIndexOf: self)
+    public var endIndex: Int { count }
+    
+    public func index(after i: Int) -> Int {
+        i + 1
     }
     
-    @inlinable
-    public var first: Element? { min }
-    
-    @inlinable
-    public var last: Element? { max }
-    
-    public func index(after i: Index) -> Index {
-        precondition(i.isValidFor(tree: self), "invalid index")
-        var next = i
-        next.formSuccessor()
-        
-        return next
+    public func formIndex(after i: inout Int) {
+        i += 1
     }
     
-    public func formIndex(after i: inout Index) {
-        precondition(i.isValidFor(tree: self), "invalid index")
-        i.formSuccessor()
+    public func index(before i: Int) -> Int {
+        i - 1
     }
     
-    public func index(before i: Index) -> Index {
-        precondition(i.isValidFor(tree: self), "invalid index")
-        var before = i
-        before.formPredecessor()
-        
-        return before
-    }
-    
-    public func formIndex(before i: inout Index) {
-        precondition(i.isValidFor(tree: self), "invalid index")
-        i.formPredecessor()
+    public func formIndex(before i: inout Int) {
+        i -= 1
     }
     
     /// Accesses the key-value pair at the specified position.
@@ -109,12 +89,12 @@ extension LLRBTree: BidirectionalCollection {
     ///                         and not equal to `endIndex`.
     /// - Returns:  A two-element tuple with the key and value corresponding to
     ///             `position`.
-    public subscript(position: Index) -> Element {
+    /// - Complexity: Amortized O(log*n*) where *n* is the lenght of the tree.
+    public subscript(position: Int) -> Element {
         get {
-            precondition(position.isValidFor(tree: self), "invalid index")
-            precondition(!position.path.isEmpty, "index out of bounds")
+            precondition(0..<count ~= position, "Index out of bounds")
             
-            return position.path.last!.node.element
+            return root!.select(rank: position).element
         }
     }
     
@@ -128,11 +108,11 @@ extension LLRBTree: BidirectionalCollection {
     ///                     and must not equal the tree's end index.
     /// - Returns: The key-value pair that correspond to `index`.
     ///
-    /// - Complexity: Amortized O(1).
+    /// - Complexity: Amortized O(log *n*) where *n* is the lenght of the tree.
     @discardableResult
-    public mutating func remove(at index: Index) -> Element {
-        precondition(index >= startIndex && index < endIndex, "index out of bounds")
-        let e = index.path.last!.node.element
+    public mutating func remove(at index: Int) -> Element {
+        precondition(0..<count ~= index, "Index out of bounds")
+        let e = root!.select(rank: index).element
         defer {
             removeValue(forKey: e.key)
         }
@@ -154,10 +134,14 @@ extension LLRBTree: BidirectionalCollection {
     /// - Parameter key: The key to find in the tree.
     /// - Returns:  The index for `key` and its associated value if `key` is in
     ///             the tree; otherwise, `nil`.
-    public func index(forKey key: Key) -> Index? {
-        let idx = Index(asIndexOfKey: key, for: self)
+    public func index(forKey key: Key) -> Int? {
+        guard
+            let idx = root?.rank(key),
+            idx < endIndex,
+            root!.select(rank: idx).key == key
+        else { return nil }
         
-        return idx < endIndex ? idx : nil
+        return idx
     }
     
 }

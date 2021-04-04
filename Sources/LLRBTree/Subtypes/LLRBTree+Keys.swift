@@ -47,10 +47,6 @@ extension LLRBTree {
         
         public var isEmpty: Bool { _tree.isEmpty }
         
-        public var first: Element? { _tree.first?.key }
-        
-        public var last: Element? { _tree.last?.key }
-        
         public var startIndex: Index { _tree.startIndex }
         
         public var endIndex: Index { _tree.endIndex }

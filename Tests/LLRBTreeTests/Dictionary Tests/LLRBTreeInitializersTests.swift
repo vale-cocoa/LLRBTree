@@ -122,7 +122,7 @@ final class LLRBTreeInitializersTests: BaseLLRBTreeTestCase {
         XCTAssertNotNil(sut.root)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
+            assertEachNodeCountIsCorrect(root: root)
         }
         assertEqualsByElements(lhs: sut, rhs: keysAndValues, message: "elements are not equal")
         
@@ -155,7 +155,7 @@ final class LLRBTreeInitializersTests: BaseLLRBTreeTestCase {
         XCTAssertNotNil(sut.root)
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
+            assertEachNodeCountIsCorrect(root: root)
         }
         assertEqualsByElements(lhs: sut, rhs: keysAndValues)
         
@@ -183,7 +183,7 @@ final class LLRBTreeInitializersTests: BaseLLRBTreeTestCase {
         }
         if let root = sut.root {
             assertLeftLeaningRedBlackTreeInvariants(root: root)
-            assertEachNodeCountAndPathToMinAndMaxAreCorrect(root: root)
+            assertEachNodeCountIsCorrect(root: root)
         }
     }
     

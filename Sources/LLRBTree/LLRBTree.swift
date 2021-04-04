@@ -41,11 +41,7 @@ import Foundation
 ///
 /// - ToDo: Conformormance to CustomStringConvertible and CustomDebugStringConvertible
 public struct LLRBTree<Key: Comparable, Value> {
-    final class ID {  }
-    
     var root: Node? = nil
-    
-    private(set) var id: ID = ID()
     
     /// Instantiates and returns a new empty tree.
     ///
@@ -58,7 +54,6 @@ public struct LLRBTree<Key: Comparable, Value> {
     }
     
     init(_ other: LLRBTree) {
-        self.id = other.id
         self.root = other.root
     }
     
@@ -68,11 +63,6 @@ public struct LLRBTree<Key: Comparable, Value> {
         if !isKnownUniquelyReferenced(&root) {
             root = root?.clone()
         }
-    }
-    
-    @inline(__always)
-    mutating func invalidateIndices() {
-        id = ID()
     }
     
 }

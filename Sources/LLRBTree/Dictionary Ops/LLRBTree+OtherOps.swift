@@ -140,7 +140,6 @@ extension LLRBTree {
         }
         
         makeUnique()
-        invalidateIndices()
         for element in other {
             try root!.setValue(element.value, forKey: element.key, uniquingKeysWith: combine)
             root!.color = .black
@@ -210,7 +209,6 @@ extension LLRBTree {
                 }
                 
                 makeUnique()
-                invalidateIndices()
                 for (key, value) in otherBuff {
                     try self.root!.setValue(value, forKey: key, uniquingKeysWith: combine)
                     self.root!.color = .black
@@ -225,7 +223,6 @@ extension LLRBTree {
             else { return }
             
             makeUnique()
-            invalidateIndices()
             try root!.setValue(firstValue, forKey: firstKey, uniquingKeysWith: combine)
             root!.color = .black
             while let (key, value) = otherIterator.next() {

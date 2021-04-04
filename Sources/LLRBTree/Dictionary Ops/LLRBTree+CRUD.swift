@@ -76,7 +76,6 @@ extension LLRBTree {
     public mutating func updateValue(_ value: Value, forKey key: Key) -> Value? {
         defer {
             root!.color = .black
-            invalidateIndices()
         }
         if root != nil {
             makeUnique()
@@ -119,7 +118,6 @@ extension LLRBTree {
     public mutating func removeValue(forKey key: Key) -> Value? {
         defer {
             root?.color = .black
-            invalidateIndices()
         }
         makeUnique()
         let result = root?.removingElement(withKey: key)
@@ -156,7 +154,6 @@ extension LLRBTree {
     public mutating func removeValueForMinKey() -> Value? {
         defer {
             root?.color = .black
-            invalidateIndices()
         }
         makeUnique()
         let result = root?.removingElementWithMinKey()
@@ -193,7 +190,6 @@ extension LLRBTree {
     public mutating func removeValueForMaxKey() -> Value? {
         defer {
             root?.color = .black
-            invalidateIndices()
         }
         makeUnique()
         let result = root?.removingElementWithMaxKey()
@@ -209,7 +205,6 @@ extension LLRBTree {
     /// - Complexity: O(1).
     public mutating func removeAll() {        
         root = nil
-        invalidateIndices()
     }
     
 }

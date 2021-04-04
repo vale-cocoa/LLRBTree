@@ -43,10 +43,6 @@ extension LLRBTree {
         
         var right: Node? = nil
         
-        var pathToMin: [WrappedNode<LLRBTree.Node>] = []
-        
-        var pathToMax: [WrappedNode<LLRBTree.Node>] = []
-        
         init(key: Key, value: Value, color: Color = .red) {
             self.key = key
             self.value = value
@@ -57,16 +53,9 @@ extension LLRBTree {
             let kClone: Key = ((key as? NSCopying)?.copy(with: zone) as? Key) ?? key
             let vClone: Value = ((value as? NSCopying)?.copy(with: zone) as? Value) ?? value
             let clone = LLRBTree.Node(key: kClone, value: vClone, color: color)
-            
             clone.count = count
-            
             clone.left = left?.copy(with: zone) as? LLRBTree.Node
-            clone.left?.updatePaths()
-            
             clone.right = right?.copy(with: zone) as? LLRBTree.Node
-            clone.right?.updatePaths()
-            
-            clone.updatePaths()
             
             return clone
         }
@@ -100,10 +89,10 @@ extension LLRBTree.Node {
 // MARK: - Computed properties
 extension LLRBTree.Node {
     @inlinable
-    var min: LLRBTree.Node { pathToMin.last?.node ?? self }
+    var min: LLRBTree.Node { left?.min ?? self }
     
     @inlinable
-    var max: LLRBTree.Node { pathToMax.last?.node ?? self }
+    var max: LLRBTree.Node { right?.max ?? self }
     
     @inlinable
     var minKey: Key { min.key }
@@ -181,14 +170,8 @@ extension LLRBTree.Node {
         let t = try transform(value)
         let result = LLRBTree<Key, T>.Node(key: key, value: t, color: isRed ? .red : .black)
         result.count = count
-        
         result.left = try left?.mapValues(transform)
-        result.left?.updatePaths()
-        
         result.right = try right?.mapValues(transform)
-        result.right?.updatePaths()
-        
-        result.updatePaths()
         
         return result
     }
@@ -200,7 +183,7 @@ extension LLRBTree.Node: Sequence {
     typealias Element = (key: Key, value: Value)
     
     struct Iterator: IteratorProtocol {
-        private var stack = [WrappedNode<LLRBTree.Node>]()
+        private var position = 0
         
         private var node: WrappedNode<LLRBTree.Node>?
         
@@ -209,20 +192,14 @@ extension LLRBTree.Node: Sequence {
         }
         
         mutating func next() -> Element? {
-            if let n = node {
-                stack.append(n)
-                stack.append(contentsOf: n.node.pathToMin)
-            }
-            
-            guard
-                let current = stack.popLast()
-            else { return nil }
+            guard node != nil else { return nil }
             
             defer {
-                self.node = current.wrappedRight
+                position += 1
+                if position >= (node?.node.count ?? 0) { node = nil }
             }
             
-            return current.node.element
+            return node?.node.select(rank: position).element
         }
         
     }
@@ -244,15 +221,9 @@ extension LLRBTree.Node: Equatable where Value: Equatable {
                 $0.key == $1.key &&
                 $0.value == $1.value
         }
-            
-        let pathNodeCmp: (WrappedNode, WrappedNode) -> Bool = {
-            nodeBaseCmp($0.node, $1.node) == true
-        }
-        
+         
         guard
-            nodeBaseCmp(lhs, rhs) == true,
-            lhs.pathToMin.elementsEqual(rhs.pathToMin, by: pathNodeCmp),
-            lhs.pathToMax.elementsEqual(rhs.pathToMax, by: pathNodeCmp)
+            nodeBaseCmp(lhs, rhs) == true
         else { return false }
         
         switch (lhs.left, rhs.left) {
@@ -287,13 +258,9 @@ extension LLRBTree.Node {
         newLeft.left = l
         newLeft.right = r.left
         newLeft.updateCount()
-        newLeft.updatePaths()
         
         left = newLeft
         right = r.right
-        
-        right?.updatePaths()
-        updatePaths()
     }
     
     @inlinable
@@ -309,13 +276,9 @@ extension LLRBTree.Node {
         newRight.left = l.right
         newRight.right = r
         newRight.updateCount()
-        newRight.updatePaths()
         
         left = l.left
         right = newRight
-        
-        left?.updatePaths()
-        updatePaths()
     }
     
     @inlinable
@@ -350,7 +313,6 @@ extension LLRBTree.Node {
         }
         
         updateCount()
-        updatePaths()
     }
     
     @inlinable
@@ -363,22 +325,6 @@ extension LLRBTree.Node {
     @inlinable
     func updateCount() {
         count = 1 + (left?.count ?? 0) + (right?.count ?? 0)
-    }
-    
-    @inlinable
-    func updatePaths() {
-        updatePathToMin()
-        updatePathToMax()
-    }
-    
-    @inlinable
-    func updatePathToMin() {
-        pathToMin = left != nil ? [WrappedNode(node: left!)] + left!.pathToMin : []
-    }
-    
-    @inlinable
-    func updatePathToMax() {
-        pathToMax = right != nil ? [WrappedNode(node: right!)] + right!.pathToMax : []
     }
     
 }
